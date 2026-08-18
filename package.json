@@ -2,13 +2,9 @@
   "name": "@dsh-extra/dsh-persona",
   "version": "0.0.1",
   "private": true,
-  "description": "罗拉数字分身 — DSH 插件包：一键部署数字分身所需的所有插件",
-  "workspaces": [
-    "packages/*"
-  ],
+  "description": "DSH 数字分身插件",
   "scripts": {
-    "build": "npm run build:guide",
-    "build:guide": "cd packages/dsh-persona-guide && npx tsc -b tsconfig.json && node scripts/build-client.mjs",
+    "build": "cd packages/dsh-persona-guide && npx tsc -b tsconfig.json && node scripts/build-client.mjs",
     "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1"
   }
 }
