@@ -26,14 +26,31 @@ function Write-OK($msg) { Write-Host "  ✓ $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
 function Write-Info($msg) { Write-Host "  → $msg" -ForegroundColor Gray }
 
-# ── 检测 DSH ──
+# ── 检测并安装 DSH ──
 Write-Step "检测环境"
-$dshPath = Get-Command dsh -ErrorAction SilentlyContinue
-if (-not $dshPath) {
-    Write-Warn "DSH 未安装，请先安装 DSH (DeepSeek Harness)"
+
+# 检测 Node.js
+$nodePath = Get-Command node -ErrorAction SilentlyContinue
+if (-not $nodePath) {
+    Write-Warn "Node.js 未安装，请先安装 Node.js >= 20"
     exit 1
 }
-Write-OK "DSH 已安装: $($dshPath.Source)"
+Write-OK "Node.js 已安装: $($nodePath.Source)"
+
+# 检测/安装 DSH
+$dshPath = Get-Command dsh -ErrorAction SilentlyContinue
+if (-not $dshPath) {
+    Write-Info "DSH 未安装，正在自动安装..."
+    npm install -g @deepseek-ai/dsh 2>&1 | Out-Null
+    $dshPath = Get-Command dsh -ErrorAction SilentlyContinue
+    if (-not $dshPath) {
+        Write-Warn "DSH 安装失败，请手动执行: npm install -g @deepseek-ai/dsh"
+        exit 1
+    }
+    Write-OK "DSH 已安装: $($dshPath.Source)"
+} else {
+    Write-OK "DSH 已安装: $($dshPath.Source)"
+}
 
 # ── 确定安装目录 ──
 Write-Step "确定安装目录"
