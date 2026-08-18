@@ -26,18 +26,46 @@ function Write-OK($msg) { Write-Host "  ✓ $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
 function Write-Info($msg) { Write-Host "  → $msg" -ForegroundColor Gray }
 
-# ── 检测并安装 DSH ──
+# ── 检测并安装 Node.js ──
 Write-Step "检测环境"
 
-# 检测 Node.js
 $nodePath = Get-Command node -ErrorAction SilentlyContinue
 if (-not $nodePath) {
-    Write-Warn "Node.js 未安装，请先安装 Node.js >= 20"
-    exit 1
+    Write-Info "Node.js 未安装，正在自动安装..."
+    
+    # 检测系统架构
+    $arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
+    $nodeUrl = "https://nodejs.org/dist/v20.19.1/node-v20.19.1-$arch.msi"
+    $msiPath = "$env:TEMP\node-install.msi"
+    
+    Write-Info "下载 Node.js v20.19.1..."
+    try {
+        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+        Invoke-WebRequest -Uri $nodeUrl -OutFile $msiPath -UseBasicParsing
+        Write-Info "正在安装 Node.js（静默安装）..."
+        Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /qn /norestart" -Wait -NoNewWindow
+        Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
+        # 刷新 PATH
+        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
+    } catch {
+        Write-Warn "Node.js 自动安装失败: $_"
+        Write-Warn "请手动安装 Node.js >= 20: https://nodejs.org/"
+        exit 1
+    }
+    
+    $nodePath = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $nodePath) {
+        Write-Warn "Node.js 安装完成但未生效，请重启终端后重试"
+        exit 1
+    }
+    Write-OK "Node.js 已安装: $($nodePath.Source)"
+} else {
+    # 检查版本
+    $nodeVer = node -v
+    Write-OK "Node.js 已安装: $($nodePath.Source) ($nodeVer)"
 }
-Write-OK "Node.js 已安装: $($nodePath.Source)"
 
-# 检测/安装 DSH
+# ── 检测并安装 DSH ──
 $dshPath = Get-Command dsh -ErrorAction SilentlyContinue
 if (-not $dshPath) {
     Write-Info "DSH 未安装，正在自动安装..."
