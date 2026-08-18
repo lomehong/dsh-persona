@@ -1,0 +1,5 @@
+- insert:
+    - id: dsh-persona-guide
+      name: '@dsh-extra/dsh-persona-guide'
+      inject: [webServer]
+      config: {}
