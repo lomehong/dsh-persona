@@ -1,4 +1,4 @@
-#!/usr/bin/env pwsh
+﻿#!/usr/bin/env pwsh
 <#
 .SYNOPSIS
   数字分身一键安装脚本
@@ -11,6 +11,9 @@ param(
     [string]$PackagesDir = "",
     [string]$BotId = "",
     [string]$Secret = "",
+    [string]$Owner = "",
+    [string]$OwnerTitle = "公司副总裁",
+    [string]$NodeVersion = "24.19.0",
     [switch]$NonInteractive = $false
 )
 
@@ -26,59 +29,148 @@ function Write-OK($msg) { Write-Host "  ✓ $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "  ⚠ $msg" -ForegroundColor Yellow }
 function Write-Info($msg) { Write-Host "  → $msg" -ForegroundColor Gray }
 
-# ── 检测并安装 Node.js ──
-Write-Step "检测环境"
-
-$nodePath = Get-Command node -ErrorAction SilentlyContinue
-if (-not $nodePath) {
-    Write-Info "Node.js 未安装，正在自动安装..."
-    
-    # 检测系统架构
-    $arch = if ([Environment]::Is64BitOperatingSystem) { "x64" } else { "x86" }
-    $nodeUrl = "https://nodejs.org/dist/v20.19.1/node-v20.19.1-$arch.msi"
-    $msiPath = "$env:TEMP\node-install.msi"
-    
-    Write-Info "下载 Node.js v20.19.1..."
-    try {
-        [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
-        Invoke-WebRequest -Uri $nodeUrl -OutFile $msiPath -UseBasicParsing
-        Write-Info "正在安装 Node.js（静默安装）..."
-        Start-Process msiexec.exe -ArgumentList "/i `"$msiPath`" /qn /norestart" -Wait -NoNewWindow
-        Remove-Item $msiPath -Force -ErrorAction SilentlyContinue
-        # 刷新 PATH
-        $env:Path = [Environment]::GetEnvironmentVariable("Path", "Machine") + ";" + [Environment]::GetEnvironmentVariable("Path", "User")
-    } catch {
-        Write-Warn "Node.js 自动安装失败: $_"
-        Write-Warn "请手动安装 Node.js >= 20: https://nodejs.org/"
-        exit 1
-    }
-    
-    $nodePath = Get-Command node -ErrorAction SilentlyContinue
-    if (-not $nodePath) {
-        Write-Warn "Node.js 安装完成但未生效，请重启终端后重试"
-        exit 1
-    }
-    Write-OK "Node.js 已安装: $($nodePath.Source)"
-} else {
-    # 检查版本
-    $nodeVer = node -v
-    Write-OK "Node.js 已安装: $($nodePath.Source) ($nodeVer)"
+# 写 UTF-8（无 BOM）文件：Windows PowerShell 5.1 的 Set-Content -Encoding UTF8 会带 BOM，
+# 而 im-channel 用 JSON.parse 读取凭证文件，BOM 会导致解析失败
+function Write-Utf8NoBom($path, $content) {
+    [IO.File]::WriteAllText($path, $content)
 }
 
-# ── 检测并安装 DSH ──
-$dshPath = Get-Command dsh -ErrorAction SilentlyContinue
-if (-not $dshPath) {
-    Write-Info "DSH 未安装，正在自动安装..."
-    npm install -g @deepseek-ai/dsh 2>&1 | Out-Null
-    $dshPath = Get-Command dsh -ErrorAction SilentlyContinue
-    if (-not $dshPath) {
-        Write-Warn "DSH 安装失败，请手动执行: npm install -g @deepseek-ai/dsh"
+# 移除插件 node_modules 里的 @deepseek-ai 作用域（可能是上次的 junction，也可能是普通目录）。
+# 必须在 npm install 之前做，否则 npm 会穿过 junction 把旧版本写进 DSH 安装目录。
+function Remove-DshScope($workDir) {
+    $scope = Join-Path $workDir "node_modules\@deepseek-ai"
+    if (-not (Test-Path $scope)) { return }
+    $item = Get-Item $scope -Force
+    if ($item.LinkType) {
+        # junction/符号链接：只删除链接本身，绝不能递归（会波及 DSH 安装目录）
+        [System.IO.Directory]::Delete($scope)
+    } else {
+        Remove-Item $scope -Recurse -Force
+    }
+}
+
+# ── 构建单个插件（出错时输出原始日志，而不是静默卡住/吞错） ──
+function Build-Plugin($workDir, $name, [switch]$LinkDshDeps) {
+    Write-Info "构建 $name..."
+    Push-Location $workDir
+    # Windows PowerShell 5.1 下 EAP=Stop 会把原生命令的 stderr 当异常中断，这里临时放宽
+    $ErrorActionPreference = "Continue"
+    # 先移除上次留下的 @deepseek-ai junction，避免 npm install 穿过它写坏 DSH 安装目录
+    Remove-DshScope $workDir
+    # @deepseek-ai 系列 rc 包的 peer 依赖互相冲突，必须加 --legacy-peer-deps，
+    # 否则 npm install 直接以 ERESOLVE 失败，且提示会被重定向吞掉
+    $out = npm install --legacy-peer-deps --no-progress 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ($out -join "`n") -ForegroundColor Red
+        Write-Warn "$name 依赖安装失败 (npm 退出码 $LASTEXITCODE)，详见上方日志"
+        Pop-Location
         exit 1
     }
-    Write-OK "DSH 已安装: $($dshPath.Source)"
-} else {
-    Write-OK "DSH 已安装: $($dshPath.Source)"
+    $out = npx --yes tsc -b tsconfig.json 2>&1 | ForEach-Object { "$_" }
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ($out -join "`n") -ForegroundColor Red
+        Write-Warn "$name 编译失败 (tsc 退出码 $LASTEXITCODE)，详见上方日志"
+        Pop-Location
+        exit 1
+    }
+    if (Test-Path "scripts/build-client.mjs") {
+        $out = node scripts/build-client.mjs 2>&1 | ForEach-Object { "$_" }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ($out -join "`n") -ForegroundColor Red
+            Write-Warn "$name 客户端打包失败 (build-client 退出码 $LASTEXITCODE)"
+            Pop-Location
+            exit 1
+        }
+    }
+    # 构建完成后移除 devDependencies：dev 副本会在运行时遮蔽宿主版本（如 dsh-timeout
+    # 缺失导致的加载失败），运行时需要的 @deepseek-ai peer 包改由下面的 junction 提供
+    npm prune --omit=dev --legacy-peer-deps --no-progress 2>&1 | ForEach-Object { "$_" } | Out-Null
+    if ($LinkDshDeps) {
+        # 参考 dsh-launcher：把插件的 @deepseek-ai 作用域 junction 到 DSH 包自带的依赖，
+        # peer 包版本与运行中的宿主严格一致。需要 node_modules 存在且 DSH 依赖作用域存在。
+        Remove-DshScope $workDir
+        $nodeModules = Join-Path $workDir "node_modules"
+        if (-not (Test-Path $nodeModules)) { New-Item -ItemType Directory -Path $nodeModules -Force | Out-Null }
+        if (-not (Test-Path $DshAIScope)) {
+            Write-Warn "未找到 DSH 依赖目录: $DshAIScope"
+            Pop-Location
+            exit 1
+        }
+        New-Item -ItemType Junction -Path (Join-Path $nodeModules "@deepseek-ai") -Target $DshAIScope | Out-Null
+    }
+    $ErrorActionPreference = "Stop"
+    Pop-Location
+    Write-OK "$name 构建完成"
 }
+
+# ── 便携版 Node.js（与系统 Node 完全隔离） ──
+# 参考 dsh-launcher 的做法：便携版解压到 %LOCALAPPDATA%，后续所有命令都基于它运行。
+# 不需要管理员权限、不修改系统 PATH，也不受系统 Node 版本 / nvm 状态影响。
+# 注意：DSH 0.1.0-rc.x 需要 Node >= 23.8（node:zlib 的 zstd API），默认用 Node 24 LTS。
+Write-Step "准备 Node.js 运行环境"
+
+$NodeRoot = Join-Path $env:LOCALAPPDATA "dsh-persona"
+$NodeDir = Join-Path $NodeRoot "node"
+$nodeExe = Join-Path $NodeDir "node.exe"
+
+if (Test-Path $nodeExe) {
+    Write-OK "便携版 Node.js 已就绪: $nodeExe ($( & $nodeExe -v ))"
+} else {
+    Write-Info "下载便携版 Node.js v$NodeVersion（约 35MB，首次需要 1~3 分钟）..."
+    $zipPath = Join-Path $env:TEMP "node-v$NodeVersion-win-x64.zip"
+    $mirrors = @(
+        "https://npmmirror.com/mirrors/node/v$NodeVersion/node-v$NodeVersion-win-x64.zip",
+        "https://nodejs.org/dist/v$NodeVersion/node-v$NodeVersion-win-x64.zip"
+    )
+    $downloaded = $false
+    foreach ($url in $mirrors) {
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri $url -OutFile $zipPath -UseBasicParsing
+            $downloaded = $true
+            break
+        } catch {
+            Write-Info "下载失败，尝试下一个镜像..."
+        }
+    }
+    if (-not $downloaded) {
+        Write-Warn "Node.js 下载失败，请检查网络后重试"
+        exit 1
+    }
+    Write-Info "解压中..."
+    $extractTmp = Join-Path $env:TEMP "node-v$NodeVersion-extract"
+    Remove-Item $extractTmp -Recurse -Force -ErrorAction SilentlyContinue
+    Expand-Archive -Path $zipPath -DestinationPath $extractTmp -Force
+    New-Item -ItemType Directory -Path $NodeRoot -Force | Out-Null
+    Remove-Item $NodeDir -Recurse -Force -ErrorAction SilentlyContinue
+    Move-Item (Join-Path $extractTmp "node-v$NodeVersion-win-x64") $NodeDir
+    Remove-Item $extractTmp -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+    Write-OK "便携版 Node.js 已安装: $nodeExe ($( & $nodeExe -v ))"
+}
+
+# 本脚本内所有 node / npm / npx / dsh 命令都使用便携版
+$env:Path = "$NodeDir;$env:Path"
+
+# ── 安装 DSH（装进便携版环境，不动系统全局） ──
+$dshCmd = Join-Path $NodeDir "dsh.cmd"
+if (-not (Test-Path $dshCmd)) {
+    Write-Info "安装 DSH 到便携版环境..."
+    $ErrorActionPreference = "Continue"
+    $out = npm install -g @deepseek-ai/dsh --no-progress 2>&1 | ForEach-Object { "$_" }
+    $ErrorActionPreference = "Stop"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ($out -join "`n") -ForegroundColor Red
+        Write-Warn "DSH 安装失败 (npm 退出码 $LASTEXITCODE)，详见上方日志"
+        exit 1
+    }
+    Write-OK "DSH 已安装到便携版环境"
+} else {
+    Write-OK "DSH 已就绪（便携版）"
+}
+
+# DSH 包自带的 @deepseek-ai 依赖作用域，运行时通过 junction 提供给需要的插件
+$DshAIScope = Join-Path $NodeDir "node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai"
 
 # ── 确定安装目录 ──
 Write-Step "确定安装目录"
@@ -87,12 +179,38 @@ if (-not $PackagesDir) {
     if ($NonInteractive) {
         $PackagesDir = $defaultDir
     } else {
-        $input = Read-Host "插件安装目录 (默认: $defaultDir)"
-        $PackagesDir = if ($input) { $input } else { $defaultDir }
+        $dirInput = Read-Host "插件安装目录 (默认: $defaultDir)"
+        $PackagesDir = if ($dirInput) { $dirInput } else { $defaultDir }
     }
 }
 New-Item -ItemType Directory -Path $PackagesDir -Force | Out-Null
 Write-OK "插件目录: $PackagesDir"
+
+# ── 分身主人信息 ──
+if (-not $Owner) {
+    if ($NonInteractive) {
+        $Owner = "罗拉"
+    } else {
+        $ownerInput = Read-Host "分身主人姓名 (默认: 罗拉)"
+        $Owner = if ($ownerInput) { $ownerInput } else { "罗拉" }
+    }
+}
+Write-OK "分身主人: $Owner（$OwnerTitle）"
+
+# 数字分身人设（同时用于 agent 预设与 system-prompt patch）
+$personaText = @"
+你是${Owner}的数字分身，由 {{model}} 模型驱动。
+
+你的身份：${Owner}（${OwnerTitle}）的专属 AI 协作伙伴。你了解${Owner}的工作背景、管理风格和个人偏好，以${Owner}的视角思考问题，用${Owner}的风格沟通表达。
+
+你的角色：一个务实、高效的 AI 搭档。你不是在「服务」${Owner}，而是在「协作」——你提供专业分析和建议，${Owner}做最终决策。你们是有商有量的伙伴关系。
+
+你的工作范围：涵盖人力资源、审计、信息安全、总裁办等管理领域的文档处理、方案分析、决策支持、跨部门协调等事务。
+
+沟通风格：直接、务实、结构化。先说结论/建议，再展开依据。善用分点、表格、对比等结构化呈现方式。不用长篇大论，不啰嗦。
+"@
+# 6 空格缩进的人设块，可直接嵌入 YAML 的块标量（>-）
+$personaBlock = ($personaText -split "`r?`n" | ForEach-Object { if ($_) { "      $_" } else { "" } }) -join "`n"
 
 # ── 克隆仓库 ──
 Write-Step "克隆仓库"
@@ -122,12 +240,13 @@ foreach ($repo in $repos) {
 # ── 复制 dsh-persona-guide ──
 Write-Step "复制分身指引插件"
 $guideDest = Join-Path $PackagesDir "dsh-persona-guide"
-if (Test-Path $guideDest) {
-    Write-OK "dsh-persona-guide 已存在"
-} else {
-    Copy-Item (Join-Path $PersonaRoot "packages\dsh-persona-guide") $guideDest -Recurse -Force
-    Write-OK "dsh-persona-guide 已复制"
-}
+# 每次都重新覆盖，保证仓库内的修复能同步到安装目录
+Remove-Item $guideDest -Recurse -Force -ErrorAction SilentlyContinue
+Copy-Item (Join-Path $PersonaRoot "packages\dsh-persona-guide") $guideDest -Recurse -Force
+# node_modules 和 lib 是构建产物，不随源码分发，留给下面的构建步骤生成
+Remove-Item (Join-Path $guideDest "node_modules") -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item (Join-Path $guideDest "lib") -Recurse -Force -ErrorAction SilentlyContinue
+Write-OK "dsh-persona-guide 已同步"
 $packages += $guideDest
 
 # ── 复制文档 ──
@@ -138,49 +257,17 @@ if (-not (Test-Path $docsDest)) {
 Copy-Item (Join-Path $PersonaRoot "docs\*") $docsDest -Force -Recurse 2>&1 | Out-Null
 Write-OK "文档已复制到: $docsDest"
 
+# ── 复制启动脚本 ──
+Copy-Item (Join-Path $PersonaRoot "启动数字分身.bat") $PackagesDir -Force
+Write-OK "启动脚本已复制到: $PackagesDir\启动数字分身.bat"
+
 # ── 构建所有插件 ──
 Write-Step "构建插件"
 
-# 1. dsh-memory
-Write-Info "构建 dsh-memory..."
-Push-Location (Join-Path $PackagesDir "dsh-memory")
-npm install 2>&1 | Out-Null
-npx tsc -b tsconfig.json 2>&1 | Out-Null
-if (Test-Path "scripts/build-client.mjs") {
-    node scripts/build-client.mjs 2>&1 | Out-Null
-}
-Pop-Location
-Write-OK "dsh-memory 构建完成"
-
-# 2. im-channel
-Write-Info "构建 im-channel..."
-Push-Location (Join-Path $PackagesDir "dsh-im-bot\im-channel")
-npm install 2>&1 | Out-Null
-npx tsc -b tsconfig.json 2>&1 | Out-Null
-Pop-Location
-Write-OK "im-channel 构建完成"
-
-# 3. ui-settings-im
-Write-Info "构建 ui-settings-im..."
-Push-Location (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im")
-npm install 2>&1 | Out-Null
-npx tsc -b tsconfig.json 2>&1 | Out-Null
-if (Test-Path "scripts/build-client.mjs") {
-    node scripts/build-client.mjs 2>&1 | Out-Null
-}
-Pop-Location
-Write-OK "ui-settings-im 构建完成"
-
-# 4. dsh-persona-guide
-Write-Info "构建 dsh-persona-guide..."
-Push-Location (Join-Path $PackagesDir "dsh-persona-guide")
-npm install 2>&1 | Out-Null
-npx tsc -b tsconfig.json 2>&1 | Out-Null
-if (Test-Path "scripts/build-client.mjs") {
-    node scripts/build-client.mjs 2>&1 | Out-Null
-}
-Pop-Location
-Write-OK "dsh-persona-guide 构建完成"
+Build-Plugin (Join-Path $PackagesDir "dsh-memory") "dsh-memory"
+Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\im-channel") "im-channel" -LinkDshDeps
+Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im") "ui-settings-im"
+Build-Plugin (Join-Path $PackagesDir "dsh-persona-guide") "dsh-persona-guide"
 
 # ── 配置 DSH Profile ──
 Write-Step "配置 DSH Profile"
@@ -212,24 +299,17 @@ $packageJson = @{
     }
 }
 
-$packageJson | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $profileDir "package.json") -Encoding UTF8
+$packageJsonText = $packageJson | ConvertTo-Json -Depth 10
+Write-Utf8NoBom (Join-Path $profileDir "package.json") $packageJsonText
 Write-OK "package.json 已写入"
 
-# 写 cordis.patch.yml
+# 写 cordis.patch.yml（人设块复用 $personaBlock）
 $cordisPatch = @"
 # ── 数字分身 ──────────────────────────────────────────────────────
 - id: system-prompt
   config:
     persona: >-
-      你是罗拉的数字分身，由 {{model}} 模型驱动。
-
-      你的身份：罗拉（公司副总裁）的专属 AI 协作伙伴。你了解她的工作背景、管理风格和个人偏好，以她的视角思考问题，用她的风格沟通表达。
-
-      你的角色：一个务实、高效的 AI 搭档。你不是在「服务」罗拉，而是在「协作」——你提供专业分析和建议，她做最终决策。你们是有商有量的伙伴关系。
-
-      你的工作范围：涵盖人力资源、审计、信息安全、总裁办等管理领域的文档处理、方案分析、决策支持、跨部门协调等事务。
-
-      沟通风格：直接、务实、结构化。先说结论/建议，再展开依据。善用分点、表格、对比等结构化呈现方式。不用长篇大论，不啰嗦。
+$personaBlock
 
 - id: skill-filesystem
   config:
@@ -240,7 +320,7 @@ $cordisPatch = @"
   config:
     default: digital-twin
 "@
-$cordisPatch | Set-Content (Join-Path $profileDir "cordis.patch.yml") -Encoding UTF8
+Write-Utf8NoBom (Join-Path $profileDir "cordis.patch.yml") $cordisPatch
 Write-OK "cordis.patch.yml 已写入"
 
 # ── 创建目录结构 ──
@@ -257,13 +337,38 @@ Write-OK "技能目录已创建: $skillsDir"
 $credDir = Join-Path $env:USERPROFILE ".dsh\im-channel\credentials"
 New-Item -ItemType Directory -Path $credDir -Force | Out-Null
 
+# ── 创建数字分身 Agent 预设 ──
+# cordis.patch.yml 里 agent-presets.default 指向 digital-twin，该预设必须存在于
+# ~/.dsh/.agent-presets/。组合结构复制自 DSH 内置 standard 预设（运行时读取，
+# 跟随 DSH 版本），仅把 persona 人设行换成罗拉的数字分身文案。
+Write-Step "创建数字分身预设"
+
+$standardPreset = Join-Path $NodeDir "node_modules\@deepseek-ai\dsh\config\agent-presets\standard\agent.cordis.yml"
+if (-not (Test-Path $standardPreset)) {
+    Write-Warn "找不到内置 standard 预设: $standardPreset"
+    exit 1
+}
+$composition = Get-Content $standardPreset -Raw
+
+$replaced = $composition -replace '(?m)^      You are a coding agent.*$', $personaBlock
+if ($replaced -eq $composition) {
+    Write-Warn "未能替换 standard 预设的人设行（DSH 版本变化？），预设将沿用默认人设"
+}
+$replaced = "# 数字分身预设：结构与 DSH 内置 standard 预设一致，仅替换 persona 人设。`n" + $replaced
+
+$presetDir = Join-Path $env:USERPROFILE ".dsh\.agent-presets\digital-twin"
+New-Item -ItemType Directory -Path $presetDir -Force | Out-Null
+Write-Utf8NoBom (Join-Path $presetDir "agent.cordis.yml") $replaced
+Write-Utf8NoBom (Join-Path $presetDir "preset.yml") "name: 数字分身`ndescription: ${Owner}的专属数字分身——管理领域的文档处理、方案分析与决策支持。`n"
+Write-OK "预设已创建: $presetDir"
+
 # ── 配置企业微信凭证 ──
 Write-Step "企业微信配置"
 
 $wecomFile = Join-Path $credDir "wecom.json"
 if ($BotId -and $Secret) {
     # 非交互模式：用参数
-    @{ botId = $BotId; secret = $Secret } | ConvertTo-Json | Set-Content $wecomFile -Encoding UTF8
+    Write-Utf8NoBom $wecomFile (@{ botId = $BotId; secret = $Secret } | ConvertTo-Json)
     Write-OK "企业微信凭证已写入"
 } elseif (-not $NonInteractive) {
     Write-Info "是否现在配置企业微信？(y/n, 默认 n)"
@@ -272,7 +377,7 @@ if ($BotId -and $Secret) {
         $inputBotId = Read-Host "BotID"
         $inputSecret = Read-Host "Secret"
         if ($inputBotId -and $inputSecret) {
-            @{ botId = $inputBotId; secret = $inputSecret } | ConvertTo-Json | Set-Content $wecomFile -Encoding UTF8
+            Write-Utf8NoBom $wecomFile (@{ botId = $inputBotId; secret = $inputSecret } | ConvertTo-Json)
             Write-OK "企业微信凭证已保存"
         } else {
             Write-Warn "跳过企业微信配置，可在 DSH 设置页面中配置"
@@ -309,7 +414,7 @@ if (-not $NonInteractive) {
             }
         } while ($true)
         if ($servers.Count -gt 0) {
-            @{ servers = $servers } | ConvertTo-Json -Depth 10 | Set-Content $mcpFile -Encoding UTF8
+            Write-Utf8NoBom $mcpFile (@{ servers = $servers } | ConvertTo-Json -Depth 10)
             Write-OK "已保存 $($servers.Count) 个 MCP 服务器"
         } else {
             Write-Info "未配置 MCP 服务器，可在 DSH 设置页面中配置"
@@ -322,10 +427,15 @@ if (-not $NonInteractive) {
 # ── 安装依赖到 profile ──
 Write-Step "安装依赖"
 Push-Location $profileDir
-npm install 2>&1 | Out-Null
+$ErrorActionPreference = "Continue"
+$out = npm install --legacy-peer-deps --no-progress 2>&1 | ForEach-Object { "$_" }
 if ($LASTEXITCODE -ne 0) {
-    Write-Warn "npm install 可能有错误，请检查 npm 日志"
+    Write-Host ($out -join "`n") -ForegroundColor Red
+    Write-Warn "profile 依赖安装失败 (npm 退出码 $LASTEXITCODE)，详见上方日志"
+    Pop-Location
+    exit 1
 }
+$ErrorActionPreference = "Stop"
 Pop-Location
 Write-OK "依赖安装完成"
 
@@ -334,11 +444,12 @@ Write-Step "安装完成"
 Write-OK "数字分身已安装完成！"
 Write-Host ""
 Write-Host "下一步：" -ForegroundColor Yellow
-Write-Host "  1. 启动 DSH: dsh web" -ForegroundColor White
-Write-Host "  2. 在浏览器打开 http://localhost:3080" -ForegroundColor White
+Write-Host "  1. 双击运行 启动数字分身.bat（仓库根目录或插件目录均有）" -ForegroundColor White
+Write-Host "  2. 浏览器会自动打开 http://127.0.0.1:3080" -ForegroundColor White
 Write-Host "  3. 进入 设置 → 手机连接 配置企业微信" -ForegroundColor White
 Write-Host "  4. 在企业微信中发送 /bind 绑定为 Owner" -ForegroundColor White
 Write-Host ""
+Write-Host "运行时环境（与系统 Node 隔离）: $NodeDir" -ForegroundColor Gray
 Write-Host "插件目录: $PackagesDir" -ForegroundColor Gray
 Write-Host "文档目录: $docsDest" -ForegroundColor Gray
 Write-Host ""
