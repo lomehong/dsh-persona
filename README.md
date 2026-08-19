@@ -25,8 +25,10 @@ cd dsh-persona
 | 分管领域/工作范围 | `-OwnerScope` | 人力资源、审计、信息安全、总裁办等管理领域 |
 | 工作习惯/沟通风格 | `-OwnerStyle` | 直接、务实、结构化；先结论再展开；善用分点、表格 |
 | 称呼习惯（分身对主人的称呼） | `-OwnerAddress` | 主人 |
+| 分身名字（分身的自称） | `-TwinName` | {主人姓名}的数字分身 |
+| 分身别名（哪些称呼指它自己，逗号分隔） | `-TwinAliases` | 分身 |
 
-配置摘要确认后，人设会同步写入 agent 预设与 system-prompt patch。也可以全部用参数传入（适合非交互/自动化），例如：
+配置摘要确认后，人设会同步写入 agent 预设与 system-prompt patch。其中「分身名字/别名」让分身有清晰的自我认知：知道别人叫哪些名字是在叫它、以什么自称，并明确自己**不是主人本人**而是主人的数字分身。也可以全部用参数传入（适合非交互/自动化），例如：
 
 ```powershell
 .\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret" -Owner "张三" -OwnerTitle "首席技术官" -OwnerAddress "张总"
@@ -39,3 +41,8 @@ http://127.0.0.1:3080。关闭该窗口即停止数字分身。
 
 - [dsh-memory](https://github.com/lomehong/dsh-memory) — 共享记忆插件
 - [dsh-im-bot](https://github.com/lomehong/dsh-im-bot) — 企业微信通道、MCP 工具注册
+- [dsh-yuyi](https://github.com/lomehong/dsh-yuyi) — 御驿通信插件（Hub 接缝、会话 roster、yuyi_* 工具集、御驿 Web 标签页）
+
+dsh-yuyi 的御驿工具会自动挂载进 digital-twin 预设，分身会话即可经 Hub 通信；其
+`node_modules\@deepseek-ai` 由 setup.ps1 统一为指向 DSH 运行时依赖的 junction，
+避免双实例导致的御驿 Tab「未配置」/接口 404 问题（见 dsh-launcher v1.3.1 的说明）。

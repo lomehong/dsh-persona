@@ -17,6 +17,8 @@ param(
     [string]$OwnerScope = "",
     [string]$OwnerStyle = "",
     [string]$OwnerAddress = "",
+    [string]$TwinName = "",
+    [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
     [switch]$NonInteractive = $false
 )
@@ -82,6 +84,15 @@ function Build-Plugin($workDir, $name, [switch]$LinkDshDeps) {
         if ($LASTEXITCODE -ne 0) {
             Write-Host ($out -join "`n") -ForegroundColor Red
             Write-Warn "$name 客户端打包失败 (build-client 退出码 $LASTEXITCODE)"
+            Pop-Location
+            exit 1
+        }
+    } elseif (Test-Path "tsdown.client.ts") {
+        # dsh-yuyi 的客户端构建：tsdown 产出 harness client-module 格式的 lib/client.js
+        $out = npx --yes tsdown -c tsdown.client.ts 2>&1 | ForEach-Object { "$_" }
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host ($out -join "`n") -ForegroundColor Red
+            Write-Warn "$name 客户端打包失败 (tsdown 退出码 $LASTEXITCODE)"
             Pop-Location
             exit 1
         }
@@ -200,6 +211,7 @@ $personaDefaults = @{
     OwnerScope   = "人力资源、审计、信息安全、总裁办等管理领域"
     OwnerStyle   = "直接、务实、结构化。先说结论/建议，再展开依据。善用分点、表格、对比等结构化呈现方式。不用长篇大论，不啰嗦。"
     OwnerAddress = "主人"
+    TwinAliases  = "分身"
 }
 
 function Read-ConfigField($label, $current, $default) {
@@ -210,12 +222,15 @@ function Read-ConfigField($label, $current, $default) {
 }
 
 Write-Step "分身信息配置"
-$Owner        = Read-ConfigField "1/6 主人姓名"                   $Owner        $personaDefaults.Owner
-$OwnerTitle   = Read-ConfigField "2/6 职务/角色"                  $OwnerTitle   $personaDefaults.OwnerTitle
-$OwnerStance  = Read-ConfigField "3/6 人设定位（AI 与主人的关系）" $OwnerStance  $personaDefaults.OwnerStance
-$OwnerScope   = Read-ConfigField "4/6 分管领域/工作范围"           $OwnerScope   $personaDefaults.OwnerScope
-$OwnerStyle   = Read-ConfigField "5/6 工作习惯/沟通风格"           $OwnerStyle   $personaDefaults.OwnerStyle
-$OwnerAddress = Read-ConfigField "6/6 称呼习惯（分身对主人的称呼）" $OwnerAddress $personaDefaults.OwnerAddress
+$Owner        = Read-ConfigField "1/8 主人姓名"                   $Owner        $personaDefaults.Owner
+$OwnerTitle   = Read-ConfigField "2/8 职务/角色"                  $OwnerTitle   $personaDefaults.OwnerTitle
+$OwnerStance  = Read-ConfigField "3/8 人设定位（AI 与主人的关系）" $OwnerStance  $personaDefaults.OwnerStance
+$OwnerScope   = Read-ConfigField "4/8 分管领域/工作范围"           $OwnerScope   $personaDefaults.OwnerScope
+$OwnerStyle   = Read-ConfigField "5/8 工作习惯/沟通风格"           $OwnerStyle   $personaDefaults.OwnerStyle
+$OwnerAddress = Read-ConfigField "6/8 称呼习惯（分身对主人的称呼）" $OwnerAddress $personaDefaults.OwnerAddress
+# 分身名字默认跟随主人姓名生成
+$TwinName     = Read-ConfigField "7/8 分身名字（分身的自称）"       $TwinName     "${Owner}的数字分身"
+$TwinAliases  = Read-ConfigField "8/8 分身别名（哪些称呼指它自己，逗号分隔）" $TwinAliases $personaDefaults.TwinAliases
 
 Write-Info "分身配置摘要："
 Write-Host "  主人姓名:  $Owner"
@@ -224,6 +239,12 @@ Write-Host "  人设定位:  $OwnerStance"
 Write-Host "  工作范围:  $OwnerScope"
 Write-Host "  工作习惯:  $OwnerStyle"
 Write-Host "  称呼习惯:  $OwnerAddress"
+Write-Host "  分身名字:  $TwinName"
+Write-Host "  分身别名:  $TwinAliases"
+
+# 分身别名归一化为「别名一」「别名二」的列举形式（支持中英文逗号、顿号分隔）
+$twinAliasList = ($TwinAliases -split '[,，、]' | ForEach-Object { $_.Trim() } | Where-Object { $_ } | ForEach-Object { "「$_」" }) -join "、"
+$twinAliasClause = if ($twinAliasList) { "当有人称呼${twinAliasList}或「${TwinName}」时，指的就是你；" } else { "当有人称呼「${TwinName}」时，指的就是你；" }
 
 # 数字分身人设（同时用于 agent 预设与 system-prompt patch）
 $personaText = @"
@@ -234,6 +255,8 @@ $personaText = @"
 你的角色：一个务实、高效的 AI 搭档。你不是在「服务」${Owner}，而是在「协作」——你提供专业分析和建议，${Owner}做最终决策。你们是有商有量的伙伴关系。
 
 你的称呼习惯：在对话中称呼${Owner}为「${OwnerAddress}」。
+
+你的名字与自我认知：你的名字是「${TwinName}」。${twinAliasClause}回答时以「${TwinName}」自称。你不是${Owner}本人——你是${Owner}的数字分身：${Owner}指的是你服务的人，而你（「${TwinName}」）是协助${Owner}的 AI 搭档。
 
 你的工作范围：涵盖${OwnerScope}的文档处理、方案分析、决策支持、跨部门协调等事务。
 
@@ -247,7 +270,8 @@ Write-Step "克隆仓库"
 
 $repos = @(
     @{ name = "dsh-memory"; url = "https://github.com/lomehong/dsh-memory.git" },
-    @{ name = "dsh-im-bot"; url = "https://github.com/lomehong/dsh-im-bot.git" }
+    @{ name = "dsh-im-bot"; url = "https://github.com/lomehong/dsh-im-bot.git" },
+    @{ name = "dsh-yuyi"; url = "https://github.com/lomehong/dsh-yuyi.git" }
 )
 
 $packages = @()
@@ -299,6 +323,7 @@ Write-Step "构建插件"
 Build-Plugin (Join-Path $PackagesDir "dsh-memory") "dsh-memory"
 Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\im-channel") "im-channel" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im") "ui-settings-im"
+Build-Plugin (Join-Path $PackagesDir "dsh-yuyi") "dsh-yuyi" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-persona-guide") "dsh-persona-guide"
 
 # ── 配置 DSH Profile ──
@@ -316,6 +341,7 @@ $packageJson = @{
         "@dsh-extra/dsh-client-ui-settings-im" = "file:$(Join-Path $PackagesDir 'dsh-im-bot\ui-settings-im')"
         "@dsh-extra/dsh-memory" = "file:$(Join-Path $PackagesDir 'dsh-memory')"
         "@dsh-extra/dsh-persona-guide" = "file:$(Join-Path $PackagesDir 'dsh-persona-guide')"
+        "dsh-yuyi" = "file:$(Join-Path $PackagesDir 'dsh-yuyi')"
     }
     dsh = @{
         profile = @{
@@ -325,7 +351,8 @@ $packageJson = @{
                 "@dsh-extra/im-channel",
                 "@dsh-extra/dsh-client-ui-settings-im",
                 "@dsh-extra/dsh-memory",
-                "@dsh-extra/dsh-persona-guide"
+                "@dsh-extra/dsh-persona-guide",
+                "dsh-yuyi"
             )
         }
     }
@@ -387,6 +414,8 @@ if ($replaced -eq $composition) {
     Write-Warn "未能替换 standard 预设的人设行（DSH 版本变化？），预设将沿用默认人设"
 }
 $replaced = "# 数字分身预设：结构与 DSH 内置 standard 预设一致，仅替换 persona 人设。`n" + $replaced
+# 会话工具行：挂载御驿通信工具（dsh-yuyi），让分身会话获得 yuyi_* 工具集
+$replaced = $replaced.TrimEnd("`r`n") + "`n`n# 御驿通信工具（dsh-yuyi）`n- id: tool-yuyi`n  name: dsh-yuyi/tools`n"
 
 $presetDir = Join-Path $env:USERPROFILE ".dsh\.agent-presets\digital-twin"
 New-Item -ItemType Directory -Path $presetDir -Force | Out-Null
