@@ -15,10 +15,21 @@ cd dsh-persona
 .\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret"
 ```
 
-可选参数（分身主人信息，不传时默认为「罗拉 / 公司副总裁」，交互模式下也会提示输入）：
+安装过程会以**向导形式逐步配置分身信息**，每一项留空回车即使用默认值：
+
+| 项目 | 参数 | 默认值 |
+|---|---|---|
+| 主人姓名 | `-Owner` | 主人 |
+| 职务/角色 | `-OwnerTitle` | 公司副总裁 |
+| 人设定位（AI 与主人的关系） | `-OwnerStance` | 专属 AI 协作伙伴 |
+| 分管领域/工作范围 | `-OwnerScope` | 人力资源、审计、信息安全、总裁办等管理领域 |
+| 工作习惯/沟通风格 | `-OwnerStyle` | 直接、务实、结构化；先结论再展开；善用分点、表格 |
+| 称呼习惯（分身对主人的称呼） | `-OwnerAddress` | 主人 |
+
+配置摘要确认后，人设会同步写入 agent 预设与 system-prompt patch。也可以全部用参数传入（适合非交互/自动化），例如：
 
 ```powershell
-.\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret" -Owner "张三" -OwnerTitle "首席技术官"
+.\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret" -Owner "张三" -OwnerTitle "首席技术官" -OwnerAddress "张总"
 ```
 
 安装完成后，双击仓库根目录（或插件目录）的 **`启动数字分身.bat`** 启动，浏览器会自动打开

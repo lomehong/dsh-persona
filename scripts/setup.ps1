@@ -12,7 +12,11 @@ param(
     [string]$BotId = "",
     [string]$Secret = "",
     [string]$Owner = "",
-    [string]$OwnerTitle = "公司副总裁",
+    [string]$OwnerTitle = "",
+    [string]$OwnerStance = "",
+    [string]$OwnerScope = "",
+    [string]$OwnerStyle = "",
+    [string]$OwnerAddress = "",
     [string]$NodeVersion = "24.19.0",
     [switch]$NonInteractive = $false
 )
@@ -186,28 +190,54 @@ if (-not $PackagesDir) {
 New-Item -ItemType Directory -Path $PackagesDir -Force | Out-Null
 Write-OK "插件目录: $PackagesDir"
 
-# ── 分身主人信息 ──
-if (-not $Owner) {
-    if ($NonInteractive) {
-        $Owner = "罗拉"
-    } else {
-        $ownerInput = Read-Host "分身主人姓名 (默认: 罗拉)"
-        $Owner = if ($ownerInput) { $ownerInput } else { "罗拉" }
-    }
+# ── 分身信息配置（向导） ──
+# 逐项设置分身主人的信息；交互模式下留空回车即使用默认值，
+# 已通过命令行参数传入的项不再询问；非交互模式未传参的项使用默认值。
+$personaDefaults = @{
+    Owner        = "主人"
+    OwnerTitle   = "公司副总裁"
+    OwnerStance  = "专属 AI 协作伙伴"
+    OwnerScope   = "人力资源、审计、信息安全、总裁办等管理领域"
+    OwnerStyle   = "直接、务实、结构化。先说结论/建议，再展开依据。善用分点、表格、对比等结构化呈现方式。不用长篇大论，不啰嗦。"
+    OwnerAddress = "主人"
 }
-Write-OK "分身主人: $Owner（$OwnerTitle）"
+
+function Read-ConfigField($label, $current, $default) {
+    if ($current) { return $current }
+    if ($NonInteractive) { return $default }
+    $v = Read-Host "$label (默认: $default)"
+    if ($v) { $v } else { $default }
+}
+
+Write-Step "分身信息配置"
+$Owner        = Read-ConfigField "1/6 主人姓名"                   $Owner        $personaDefaults.Owner
+$OwnerTitle   = Read-ConfigField "2/6 职务/角色"                  $OwnerTitle   $personaDefaults.OwnerTitle
+$OwnerStance  = Read-ConfigField "3/6 人设定位（AI 与主人的关系）" $OwnerStance  $personaDefaults.OwnerStance
+$OwnerScope   = Read-ConfigField "4/6 分管领域/工作范围"           $OwnerScope   $personaDefaults.OwnerScope
+$OwnerStyle   = Read-ConfigField "5/6 工作习惯/沟通风格"           $OwnerStyle   $personaDefaults.OwnerStyle
+$OwnerAddress = Read-ConfigField "6/6 称呼习惯（分身对主人的称呼）" $OwnerAddress $personaDefaults.OwnerAddress
+
+Write-Info "分身配置摘要："
+Write-Host "  主人姓名:  $Owner"
+Write-Host "  职务/角色: $OwnerTitle"
+Write-Host "  人设定位:  $OwnerStance"
+Write-Host "  工作范围:  $OwnerScope"
+Write-Host "  工作习惯:  $OwnerStyle"
+Write-Host "  称呼习惯:  $OwnerAddress"
 
 # 数字分身人设（同时用于 agent 预设与 system-prompt patch）
 $personaText = @"
 你是${Owner}的数字分身，由 {{model}} 模型驱动。
 
-你的身份：${Owner}（${OwnerTitle}）的专属 AI 协作伙伴。你了解${Owner}的工作背景、管理风格和个人偏好，以${Owner}的视角思考问题，用${Owner}的风格沟通表达。
+你的身份：${Owner}（${OwnerTitle}）的${OwnerStance}。你了解${Owner}的工作背景、管理风格和个人偏好，以${Owner}的视角思考问题，用${Owner}的风格沟通表达。
 
 你的角色：一个务实、高效的 AI 搭档。你不是在「服务」${Owner}，而是在「协作」——你提供专业分析和建议，${Owner}做最终决策。你们是有商有量的伙伴关系。
 
-你的工作范围：涵盖人力资源、审计、信息安全、总裁办等管理领域的文档处理、方案分析、决策支持、跨部门协调等事务。
+你的称呼习惯：在对话中称呼${Owner}为「${OwnerAddress}」。
 
-沟通风格：直接、务实、结构化。先说结论/建议，再展开依据。善用分点、表格、对比等结构化呈现方式。不用长篇大论，不啰嗦。
+你的工作范围：涵盖${OwnerScope}的文档处理、方案分析、决策支持、跨部门协调等事务。
+
+沟通风格：${OwnerStyle}
 "@
 # 6 空格缩进的人设块，可直接嵌入 YAML 的块标量（>-）
 $personaBlock = ($personaText -split "`r?`n" | ForEach-Object { if ($_) { "      $_" } else { "" } }) -join "`n"
@@ -250,7 +280,9 @@ Write-OK "dsh-persona-guide 已同步"
 $packages += $guideDest
 
 # ── 复制文档 ──
-$docsDest = Join-Path $PackagesDir "docs"
+# 分身指引文档放在固定目录 ~/.dsh/persona-docs（机器级路径，不随工作区/插件目录变化），
+# dsh-persona-guide 插件默认从该目录读取
+$docsDest = Join-Path $env:USERPROFILE ".dsh\persona-docs"
 if (-not (Test-Path $docsDest)) {
     New-Item -ItemType Directory -Path $docsDest -Force | Out-Null
 }
@@ -359,7 +391,7 @@ $replaced = "# 数字分身预设：结构与 DSH 内置 standard 预设一致�
 $presetDir = Join-Path $env:USERPROFILE ".dsh\.agent-presets\digital-twin"
 New-Item -ItemType Directory -Path $presetDir -Force | Out-Null
 Write-Utf8NoBom (Join-Path $presetDir "agent.cordis.yml") $replaced
-Write-Utf8NoBom (Join-Path $presetDir "preset.yml") "name: 数字分身`ndescription: ${Owner}的专属数字分身——管理领域的文档处理、方案分析与决策支持。`n"
+Write-Utf8NoBom (Join-Path $presetDir "preset.yml") "name: 数字分身`ndescription: ${Owner}（${OwnerTitle}）的专属数字分身。`n"
 Write-OK "预设已创建: $presetDir"
 
 # ── 配置企业微信凭证 ──
