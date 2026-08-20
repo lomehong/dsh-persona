@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>数字分身</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+    background: linear-gradient(135deg, #1c2431 0%, #2b3a55 60%, #33475f 100%);
+    color: #e8ecf1;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 22px; user-select: none;
+  }
+  .logo {
+    width: 84px; height: 84px; border-radius: 22px;
+    background: linear-gradient(135deg, #4a6cf7, #7b5cf0);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 44px; font-weight: 700;
+    box-shadow: 0 10px 30px rgba(74, 108, 247, 0.35);
+  }
+  .title { font-size: 20px; font-weight: 600; letter-spacing: 1px; }
+  .spinner {
+    width: 26px; height: 26px; border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.18); border-top-color: #7b9bff;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #status { font-size: 13px; color: #aeb9c8; min-height: 20px; }
+  #status.error { color: #ff8f8f; }
+  .hint { font-size: 12px; color: #6d7a8a; }
+</style>
+</head>
+<body>
+  <div class="logo">分</div>
+  <div class="title">数字分身</div>
+  <div class="spinner" id="spinner"></div>
+  <div id="status">正在启动运行时…</div>
+  <div class="hint">首次启动约需 10~30 秒，请稍候</div>
+  <script>
+    const el = document.getElementById('status');
+    // 监听 Rust 侧推送的启动状态；就绪后由 Rust 导航到主界面
+    if (window.__TAURI__ && window.__TAURI__.event) {
+      window.__TAURI__.event.listen('startup-status', (e) => {
+        const msg = e.payload;
+        el.textContent = typeof msg === 'string' ? msg : (msg && msg.text) || '';
+        if (msg && msg.error) { el.classList.add('error'); document.getElementById('spinner').style.display = 'none'; }
+      });
+    }
+  </script>
+</body>
+</html>

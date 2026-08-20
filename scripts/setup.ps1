@@ -254,7 +254,7 @@ $personaText = @"
 
 你的角色：一个务实、高效的 AI 搭档。你不是在「服务」${Owner}，而是在「协作」——你提供专业分析和建议，${Owner}做最终决策。你们是有商有量的伙伴关系。
 
-你的称呼习惯：在对话中称呼${Owner}为「${OwnerAddress}」。
+你的称呼习惯与身份区分：每条消息开头的方括号标注了发送者身份——「主人…」表示你的主人${Owner}，「访客…」表示其他使用者。只有消息以「主人」标注时，你才称呼对方为「${OwnerAddress}」；消息以「访客」标注时，以「您」或对方的姓名、职位礼貌称呼，绝不称呼访客为「${OwnerAddress}」。
 
 你的名字与自我认知：你的名字是「${TwinName}」。${twinAliasClause}回答时以「${TwinName}」自称。你不是${Owner}本人——你是${Owner}的数字分身：${Owner}指的是你服务的人，而你（「${TwinName}」）是协助${Owner}的 AI 搭档。
 
@@ -313,9 +313,14 @@ if (-not (Test-Path $docsDest)) {
 Copy-Item (Join-Path $PersonaRoot "docs\*") $docsDest -Force -Recurse 2>&1 | Out-Null
 Write-OK "文档已复制到: $docsDest"
 
-# ── 复制启动脚本 ──
+# ── 复制启动脚本与桌面应用 ──
 Copy-Item (Join-Path $PersonaRoot "启动数字分身.bat") $PackagesDir -Force
 Write-OK "启动脚本已复制到: $PackagesDir\启动数字分身.bat"
+$desktopExe = Join-Path $PersonaRoot "数字分身.exe"
+if (Test-Path $desktopExe) {
+    Copy-Item $desktopExe $PackagesDir -Force
+    Write-OK "桌面应用已复制到: $PackagesDir\数字分身.exe"
+}
 
 # ── 构建所有插件 ──
 Write-Step "构建插件"
@@ -505,7 +510,8 @@ Write-Step "安装完成"
 Write-OK "数字分身已安装完成！"
 Write-Host ""
 Write-Host "下一步：" -ForegroundColor Yellow
-Write-Host "  1. 双击运行 启动数字分身.bat（仓库根目录或插件目录均有）" -ForegroundColor White
+Write-Host "  1. 双击运行 数字分身.exe（推荐：桌面应用，关闭窗口=最小化到托盘）" -ForegroundColor White
+Write-Host "     备用：双击 启动数字分身.bat（控制台 + 浏览器方式）" -ForegroundColor Gray
 Write-Host "  2. 浏览器会自动打开 http://127.0.0.1:3080" -ForegroundColor White
 Write-Host "  3. 进入 设置 → 手机连接 配置企业微信" -ForegroundColor White
 Write-Host "  4. 在企业微信中发送 /bind 绑定为 Owner" -ForegroundColor White

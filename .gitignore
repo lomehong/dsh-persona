@@ -2,3 +2,5 @@ node_modules/
 packages/dsh-persona-guide/node_modules/
 packages/dsh-persona-guide/lib/
 *.tsbuildinfo
+app/src-tauri/target/
+app/icon-src.png

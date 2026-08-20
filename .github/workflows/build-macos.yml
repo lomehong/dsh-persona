@@ -1,0 +1,53 @@
+name: build-macos
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'scripts/setup.sh'
+      - '.github/workflows/build-macos.yml'
+  workflow_dispatch:
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行 setup.sh（验证 macOS 安装链路）
+        run: |
+          bash scripts/setup.sh --non-interactive
+
+      - name: 冒烟测试 dsh web（无企微凭证，仅验证服务可启动）
+        continue-on-error: true
+        run: |
+          RUNTIME="$HOME/Library/Application Support/dsh-persona/node"
+          "$RUNTIME/bin/node" "$RUNTIME/node_modules/@deepseek-ai/dsh/lib/bin.js" web > /tmp/dsh-web.log 2>&1 &
+          DSH_PID=$!
+          ok=""
+          for i in $(seq 1 60); do
+            if curl -sf http://127.0.0.1:3080/ > /dev/null; then ok=1; break; fi
+            sleep 2
+          done
+          tail -20 /tmp/dsh-web.log
+          kill $DSH_PID 2>/dev/null || true
+          [ -n "$ok" ] || { echo "::warning::dsh web 未能在 120 秒内就绪（详见上方日志）"; exit 1; }
+
+      - name: 构建 Tauri 应用（app + dmg）
+        working-directory: app/src-tauri
+        run: |
+          npx --yes @tauri-apps/cli@latest build --bundles app,dmg
+
+      - name: 整理产物
+        run: |
+          mkdir -p dist
+          cp -R "app/src-tauri/target/release/bundle/macos/数字分身.app" dist/
+          cp app/src-tauri/target/release/bundle/dmg/*.dmg dist/
+          ls -la dist/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dsh-persona-macos
+          path: dist/
+          if-no-files-found: error
