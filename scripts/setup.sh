@@ -19,7 +19,7 @@ PERSONA_ROOT="$(dirname "$SCRIPT_DIR")"
 RUNTIME_ROOT="$HOME/Library/Application Support/dsh-persona"
 NODE_DIR="$RUNTIME_ROOT/node"
 PROFILE_DIR="$HOME/.dsh/profiles/web"
-DSH_AI_SCOPE="$NODE_DIR/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai"
+DSH_AI_SCOPE="$NODE_DIR/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai"
 [[ -n "${TMPDIR:-}" ]] || TMPDIR="/tmp"
 
 # ── 参数解析 ──
@@ -262,7 +262,7 @@ mkdir -p "$HOME/.dsh/skills/management" "$HOME/.dsh/skills/personal" "$HOME/.dsh
 mkdir -p "$HOME/.dsh/im-channel/credentials"
 ok "技能与凭证目录已创建"
 
-STANDARD_PRESET="$NODE_DIR/node_modules/@deepseek-ai/dsh/config/agent-presets/standard/agent.cordis.yml"
+STANDARD_PRESET="$NODE_DIR/lib/node_modules/@deepseek-ai/dsh/config/agent-presets/standard/agent.cordis.yml"
 [[ -f "$STANDARD_PRESET" ]] || { warn "找不到内置 standard 预设: $STANDARD_PRESET"; exit 1; }
 PRESET_DIR="$HOME/.dsh/.agent-presets/digital-twin"
 mkdir -p "$PRESET_DIR"

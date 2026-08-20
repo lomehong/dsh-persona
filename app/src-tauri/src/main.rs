@@ -108,6 +108,7 @@ fn node_exe() -> PathBuf {
 fn dsh_bin_js() -> PathBuf {
     runtime_root()
         .join("node")
+        .join("lib")
         .join("node_modules")
         .join("@deepseek-ai")
         .join("dsh")
