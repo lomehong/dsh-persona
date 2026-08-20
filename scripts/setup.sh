@@ -199,11 +199,11 @@ build_plugin() { # $1=目录 $2=名称 $3=是否链接 DSH 依赖(1/0)
 }
 
 step "构建插件"
-build_plugin "$PACKAGES_DIR/dsh-memory" "dsh-memory" 0
+build_plugin "$PACKAGES_DIR/dsh-memory" "dsh-memory" 1
 build_plugin "$PACKAGES_DIR/dsh-im-bot/im-channel" "im-channel" 1
-build_plugin "$PACKAGES_DIR/dsh-im-bot/ui-settings-im" "ui-settings-im" 0
+build_plugin "$PACKAGES_DIR/dsh-im-bot/ui-settings-im" "ui-settings-im" 1
 build_plugin "$PACKAGES_DIR/dsh-yuyi" "dsh-yuyi" 1
-build_plugin "$GUIDE_DEST" "dsh-persona-guide" 0
+build_plugin "$GUIDE_DEST" "dsh-persona-guide" 1
 
 # ── 配置 Profile ──
 step "配置 DSH Profile"
@@ -269,7 +269,7 @@ mkdir -p "$PRESET_DIR"
 BLOCK_FILE="$TMPDIR/persona-block.txt"
 printf '%s\n' "$PERSONA_BLOCK" > "$BLOCK_FILE"
 awk 'BEGIN{done=0} /^      You are a coding agent/ && !done { while ((getline line < BLOCK) > 0) print line; done=1; next } {print}' BLOCK="$BLOCK_FILE" "$STANDARD_PRESET" \
-  | { printf '# 数字分身预设：结构与 DSH 内置 standard 预设一致，仅替换 persona 人设。\n'; cat; printf '\n# 御驿通信工具（dsh-yuyi）\n- id: tool-yuyi\n  name: dsh-yuyi/tools\n'; } \
+  | { printf '# 数字分身预设：结构与 DSH 内置 standard 预设一致，仅替换 persona 人设。\n'; cat; printf '\n# 御驿通信工具（dsh-yuyi）\n- id: tool-yuyi\n  name: dsh-yuyi/tools\n\n# 共享记忆工具（dsh-memory）\n- id: tool-memory\n  name: '"'"'@dsh-extra/dsh-memory/tools'"'"'\n'; } \
   > "$PRESET_DIR/agent.cordis.yml"
 rm -f "$BLOCK_FILE"
 printf 'name: 数字分身\ndescription: %s（%s）的专属数字分身。\n' "$OWNER" "$OWNER_TITLE" > "$PRESET_DIR/preset.yml"

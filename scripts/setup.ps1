@@ -325,11 +325,11 @@ if (Test-Path $desktopExe) {
 # ── 构建所有插件 ──
 Write-Step "构建插件"
 
-Build-Plugin (Join-Path $PackagesDir "dsh-memory") "dsh-memory"
+Build-Plugin (Join-Path $PackagesDir "dsh-memory") "dsh-memory" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\im-channel") "im-channel" -LinkDshDeps
-Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im") "ui-settings-im"
+Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im") "ui-settings-im" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-yuyi") "dsh-yuyi" -LinkDshDeps
-Build-Plugin (Join-Path $PackagesDir "dsh-persona-guide") "dsh-persona-guide"
+Build-Plugin (Join-Path $PackagesDir "dsh-persona-guide") "dsh-persona-guide" -LinkDshDeps
 
 # ── 配置 DSH Profile ──
 Write-Step "配置 DSH Profile"
@@ -419,8 +419,8 @@ if ($replaced -eq $composition) {
     Write-Warn "未能替换 standard 预设的人设行（DSH 版本变化？），预设将沿用默认人设"
 }
 $replaced = "# 数字分身预设：结构与 DSH 内置 standard 预设一致，仅替换 persona 人设。`n" + $replaced
-# 会话工具行：挂载御驿通信工具（dsh-yuyi），让分身会话获得 yuyi_* 工具集
-$replaced = $replaced.TrimEnd("`r`n") + "`n`n# 御驿通信工具（dsh-yuyi）`n- id: tool-yuyi`n  name: dsh-yuyi/tools`n"
+# 会话工具行：御驿通信工具 + 共享记忆工具，让分身会话获得相应工具集
+$replaced = $replaced.TrimEnd("`r`n") + "`n`n# 御驿通信工具（dsh-yuyi）`n- id: tool-yuyi`n  name: dsh-yuyi/tools`n`n# 共享记忆工具（dsh-memory）`n- id: tool-memory`n  name: '@dsh-extra/dsh-memory/tools'`n"
 
 $presetDir = Join-Path $env:USERPROFILE ".dsh\.agent-presets\digital-twin"
 New-Item -ItemType Directory -Path $presetDir -Force | Out-Null
