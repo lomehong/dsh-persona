@@ -56,10 +56,12 @@ cd dsh-persona
 
 - 运行时位于 `~/Library/Application Support/dsh-persona/node`（便携版，与系统 Node 隔离）
 - 插件的 `@deepseek-ai` peer 依赖用 **symlink** 指向 DSH 自带依赖（对应 Windows 的 junction）
-- macOS 桌面应用（`数字分身.app`）由 GitHub Actions 在 macos runner 上构建
-  （`.github/workflows/build-macos.yml`，改动 `app/**` 或 `scripts/setup.sh` 后自动触发），
-  产物在仓库 **Actions → build-macos → Artifacts** 下载 `dsh-persona-macos`
-  （含 `.app` 与 `.dmg`）；放入仓库根目录后重跑 setup.sh 会安装到 `~/Applications`
+- macOS 桌面应用两条获取路径：
+  1. **真机构建（推荐）**：Mac 上装有 Rust（`brew install rust`）与 Xcode Command Line
+     Tools（`xcode-select --install`）时，`setup.sh` 会自动从 `app/` 源码构建
+     `数字分身.app` 并安装到 `~/Applications`
+  2. **CI 构建**：GitHub Actions（`build-macos.yml`）在 macos runner 上产出 `.app`/`.dmg`
+     Artifacts（若 Actions 因账号额度/风控无法启动，需在 GitHub Settings → Billing 检查）
 - 首次打开未签名应用：右键 `数字分身.app` → 打开，或在终端执行
   `xattr -cr ~/Applications/数字分身.app` 后再打开
 - 企业微信 SDK 在 macOS 上的链路以 Actions 冒烟测试 + 真机实测为准
