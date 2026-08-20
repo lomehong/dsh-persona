@@ -287,13 +287,28 @@ ok "依赖安装完成"
 
 # ── 桌面应用 ──
 step "安装桌面应用"
-if [[ -d "$PERSONA_ROOT/数字分身.app" ]]; then
+APP_SRC_PREBUILT="$PERSONA_ROOT/数字分身.app"
+APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/数字分身.app"
+install_app() {
   mkdir -p "$HOME/Applications"
   rm -rf "$HOME/Applications/数字分身.app"
-  ditto "$PERSONA_ROOT/数字分身.app" "$HOME/Applications/数字分身.app"
+  ditto "$1" "$HOME/Applications/数字分身.app"
   ok "已安装到 ~/Applications/数字分身.app"
+}
+if [[ -d "$APP_SRC_PREBUILT" ]]; then
+  install_app "$APP_SRC_PREBUILT"
+elif [[ -d "$APP_BUNDLE" ]]; then
+  install_app "$APP_BUNDLE"
+elif command -v cargo >/dev/null 2>&1; then
+  # 真机构建（最推荐的验证路径；需要 Xcode Command Line Tools）
+  info "检测到 Rust 工具链，从源码构建桌面应用（约 5~10 分钟）…"
+  if (cd "$PERSONA_ROOT/app/src-tauri" && npx --yes @tauri-apps/cli@latest build --bundles app); then
+    [[ -d "$APP_BUNDLE" ]] && install_app "$APP_BUNDLE" || { warn "构建产物未找到，请检查上方日志"; }
+  else
+    warn "桌面应用构建失败（请确认已安装 Xcode Command Line Tools: xcode-select --install）"
+  fi
 else
-  info "仓库内暂无 macOS 应用包（数字分身.app），可从 GitHub Releases 下载后放入仓库根目录重跑本脚本，或直接使用 dsh web"
+  info "未检测到 Rust 工具链，跳过桌面应用。可选：brew install rust 后重跑本脚本自动构建，或从 GitHub Actions Artifacts 下载"
 fi
 
 # ── 完成 ──
