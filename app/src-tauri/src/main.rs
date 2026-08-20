@@ -25,6 +25,23 @@ const MAX_AUTO_RESTARTS: u32 = 3;
 struct DshState {
     child: Mutex<Option<Child>>,
     restarts: Mutex<u32>,
+    launch: Mutex<Option<Launch>>,
+}
+
+/// 启动状态：供加载页轮询（事件推送可能早于页面监听器挂载而丢失，轮询更可靠）
+#[derive(Default)]
+struct StatusState(Mutex<StartupStatus>);
+
+#[derive(Default, Clone, serde::Serialize)]
+struct StartupStatus {
+    text: String,
+    error: bool,
+    ready: bool,
+}
+
+#[tauri::command]
+fn get_status(state: tauri::State<'_, StatusState>) -> StartupStatus {
+    state.0.lock().unwrap().clone()
 }
 
 fn main() {
@@ -43,17 +60,17 @@ fn main() {
         .manage(DshState {
             child: Mutex::new(None),
             restarts: Mutex::new(0),
+            launch: Mutex::new(None),
         })
+        .manage(StatusState::default())
+        .invoke_handler(tauri::generate_handler![get_status])
         .setup(|app| {
             build_tray(app.handle())?;
             // 启动序列在后台线程执行，窗口先显示加载页
             let handle = app.handle().clone();
             std::thread::spawn(move || {
                 if let Err(err) = startup_sequence(&handle) {
-                    let _ = handle.emit(
-                        "startup-status",
-                        serde_json::json!({ "text": err, "error": true }),
-                    );
+                    update_status(&handle, &err, true, false);
                 }
             });
             // 服务守护：异常退出时自动重启
@@ -106,10 +123,12 @@ fn node_exe() -> PathBuf {
 }
 
 fn dsh_bin_js() -> PathBuf {
-    runtime_root()
-        .join("node")
-        .join("lib")
-        .join("node_modules")
+    // Windows 便携版 npm -g 装到 node\node_modules；macOS 装到 node/lib/node_modules
+    let mut p = runtime_root().join("node");
+    if !cfg!(windows) {
+        p = p.join("lib");
+    }
+    p.join("node_modules")
         .join("@deepseek-ai")
         .join("dsh")
         .join("lib")
@@ -118,6 +137,64 @@ fn dsh_bin_js() -> PathBuf {
 
 fn log_file() -> PathBuf {
     runtime_root().join("dsh-web.log")
+}
+
+/// dsh web 的启动方式：便携版运行时（node + bin.js）或系统 node + 全局 dsh 命令
+#[derive(Clone, Copy)]
+enum Launch {
+    Portable,
+    System,
+}
+
+/* ───────────────────── 运行时自举 ───────────────────── */
+
+/// 检查命令是否可用（PATH 上能找到）
+#[cfg(windows)]
+fn command_exists(name: &str) -> bool {
+    let mut c = Command::new("where.exe");
+    c.arg(name);
+    no_window(&mut c)
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
+}
+
+/// 只检测、不安装：node 与 dsh 都就绪才返回启动方式，否则提示先安装。
+#[cfg(windows)]
+fn bootstrap_runtime(_app: &tauri::AppHandle) -> Result<Launch, String> {
+    let node_path = node_exe();
+    let bin_path = dsh_bin_js();
+    let portable = node_path.exists() && bin_path.exists();
+    // 诊断日志：记录检测到的路径与结果，便于排查环境差异
+    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(log_file()) {
+        let _ = writeln!(
+            f,
+            "[检测] LOCALAPPDATA={:?} node={:?} exists={} bin={:?} exists={} portable={}",
+            std::env::var("LOCALAPPDATA").unwrap_or_default(),
+            node_path,
+            node_path.exists(),
+            bin_path,
+            bin_path.exists(),
+            portable
+        );
+    }
+    if portable {
+        return Ok(Launch::Portable);
+    }
+    let has_node = portable || command_exists("node");
+    if !has_node {
+        return Err("未检测到 Node.js。\n请先安装 Node.js（https://nodejs.org/），或运行本仓库的 scripts\\setup.ps1 一键安装。".into());
+    }
+    let has_dsh = command_exists("dsh");
+    if !has_dsh {
+        return Err("未检测到 DSH。\n请先执行 npm install -g @deepseek-ai/dsh，或运行本仓库的 scripts\\setup.ps1 一键安装。".into());
+    }
+    Ok(Launch::System)
+}
+
+#[cfg(not(windows))]
+fn bootstrap_runtime(_app: &tauri::AppHandle) -> Result<Launch, String> {
+    Err("macOS 请先运行 scripts/setup.sh 完成安装（第二期交付）".into())
 }
 
 /* ───────────────────── 进程管理 ───────────────────── */
@@ -135,15 +212,7 @@ fn no_window(cmd: &mut Command) -> &mut Command {
     cmd
 }
 
-fn spawn_dsh() -> Result<Child, String> {
-    let node = node_exe();
-    let bin = dsh_bin_js();
-    if !node.exists() {
-        return Err("未找到便携版 Node 运行时。请先运行 scripts/setup.ps1 完成安装。".into());
-    }
-    if !bin.exists() {
-        return Err("未找到 DSH。请先运行 scripts/setup.ps1 完成安装。".into());
-    }
+fn spawn_dsh(launch: Launch) -> Result<Child, String> {
     let mut log = std::fs::OpenOptions::new()
         .create(true)
         .append(true)
@@ -152,21 +221,32 @@ fn spawn_dsh() -> Result<Child, String> {
     let log_err = log.try_clone().map_err(|e| format!("{e}"))?;
     let _ = writeln!(log, "\n===== dsh web 由桌面应用启动 {} =====", chrono_now());
 
-    let node_dir = node.parent().map(|p| p.to_path_buf()).unwrap_or_default();
-    let path_var = if cfg!(windows) {
-        let sys = std::env::var("PATH").unwrap_or_default();
-        format!("{};{}", node_dir.display(), sys)
-    } else {
-        let sys = std::env::var("PATH").unwrap_or_default();
-        format!("{}:{}", node_dir.display(), sys)
+    let mut cmd = match launch {
+        Launch::Portable => {
+            let node = node_exe();
+            let bin = dsh_bin_js();
+            if !node.exists() || !bin.exists() {
+                return Err("便携运行时就绪检查失败，请重新打开本程序。".into());
+            }
+            let node_dir = node.parent().map(|p| p.to_path_buf()).unwrap_or_default();
+            let sys = std::env::var("PATH").unwrap_or_default();
+            let sep = if cfg!(windows) { ";" } else { ":" };
+            let path_var = format!("{}{}{}", node_dir.display(), sep, sys);
+            let mut c = Command::new(&node);
+            c.arg(&bin)
+                .arg("web")
+                .env("PATH", &path_var)
+                .current_dir(node_dir);
+            c
+        }
+        Launch::System => {
+            // 系统 node + 全局 dsh 命令：经 cmd 调用以解析 PATH 上的 dsh.cmd
+            let mut c = Command::new("cmd.exe");
+            c.args(["/C", "dsh", "web"]);
+            c
+        }
     };
-
-    let mut cmd = Command::new(&node);
-    cmd.arg(&bin)
-        .arg("web")
-        .env("PATH", &path_var)
-        .current_dir(node_dir.clone())
-        .stdin(Stdio::null())
+    cmd.stdin(Stdio::null())
         .stdout(Stdio::from(log))
         .stderr(Stdio::from(log_err));
     // macOS/Linux：独立进程组，整组终止不波及父进程（App）
@@ -221,11 +301,22 @@ fn chrono_now() -> String {
 
 /* ───────────────────── 启动序列 ───────────────────── */
 
-fn set_status(app: &tauri::AppHandle, text: &str, error: bool) {
+fn update_status(app: &tauri::AppHandle, text: &str, error: bool, ready: bool) {
+    if let Some(s) = app.try_state::<StatusState>() {
+        *s.0.lock().unwrap() = StartupStatus {
+            text: text.to_string(),
+            error,
+            ready,
+        };
+    }
     let _ = app.emit(
         "startup-status",
-        serde_json::json!({ "text": text, "error": error }),
+        serde_json::json!({ "text": text, "error": error, "ready": ready }),
     );
+}
+
+fn set_status(app: &tauri::AppHandle, text: &str, error: bool) {
+    update_status(app, text, error, false);
 }
 
 fn startup_sequence(app: &tauri::AppHandle) -> Result<(), String> {
@@ -236,8 +327,11 @@ fn startup_sequence(app: &tauri::AppHandle) -> Result<(), String> {
         navigate_to_ui(app);
         return Ok(());
     }
+    set_status(app, "检查运行环境（未安装 DSH 时会自动安装）…", false);
+    let launch = bootstrap_runtime(app)?;
+    *state.launch.lock().unwrap() = Some(launch);
     set_status(app, "正在启动数字分身服务…", false);
-    let child = spawn_dsh()?;
+    let child = spawn_dsh(launch)?;
     *state.child.lock().unwrap() = Some(child);
     set_status(app, "等待服务就绪（首次启动约需 10~30 秒）…", false);
     if !wait_port_ready(Duration::from_secs(BOOT_TIMEOUT_SECS)) {
@@ -253,8 +347,20 @@ fn startup_sequence(app: &tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// 读取已记录的启动方式；无记录时重新探测（用于自动重启/手动重启）
+fn resolve_launch(app: &tauri::AppHandle) -> Result<Launch, String> {
+    let state: tauri::State<DshState> = app.state();
+    if let Some(l) = *state.launch.lock().unwrap() {
+        return Ok(l);
+    }
+    let launch = bootstrap_runtime(app)?;
+    *state.launch.lock().unwrap() = Some(launch);
+    Ok(launch)
+}
+
 /// 把主窗口从加载页导航到 dsh web 界面
 fn navigate_to_ui(app: &tauri::AppHandle) {
+    update_status(app, "服务已就绪", false, true);
     if let Some(w) = app.get_webview_window("main") {
         let _ = w.eval(&format!("location.replace('http://127.0.0.1:{PORT}/')"));
         let _ = w.show();
@@ -279,7 +385,7 @@ fn restart_service(app: &tauri::AppHandle) {
         let _ = w.eval("location.replace('index.html')");
         let _ = w.show();
     }
-    match spawn_dsh() {
+    match resolve_launch(app).and_then(spawn_dsh) {
         Ok(child) => {
             *state.child.lock().unwrap() = Some(child);
             if wait_port_ready(Duration::from_secs(BOOT_TIMEOUT_SECS)) {
@@ -319,7 +425,7 @@ fn watch_child(app: &tauri::AppHandle) {
         let n = *restarts;
         drop(restarts);
         set_status(app, &format!("服务异常退出，正在自动重启（第 {n} 次）…"), false);
-        match spawn_dsh() {
+        match resolve_launch(app).and_then(spawn_dsh) {
             Ok(child) => {
                 *state.child.lock().unwrap() = Some(child);
             }

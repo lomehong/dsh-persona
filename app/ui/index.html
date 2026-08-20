@@ -40,14 +40,30 @@
   <div class="hint">首次启动约需 10~30 秒，请稍候</div>
   <script>
     const el = document.getElementById('status');
-    // 监听 Rust 侧推送的启动状态；就绪后由 Rust 导航到主界面
-    if (window.__TAURI__ && window.__TAURI__.event) {
-      window.__TAURI__.event.listen('startup-status', (e) => {
-        const msg = e.payload;
-        el.textContent = typeof msg === 'string' ? msg : (msg && msg.text) || '';
-        if (msg && msg.error) { el.classList.add('error'); document.getElementById('spinner').style.display = 'none'; }
-      });
+    const spinner = document.getElementById('spinner');
+    const invoke = window.__TAURI__ && window.__TAURI__.core && window.__TAURI__.core.invoke;
+    const listen = window.__TAURI__ && window.__TAURI__.event && window.__TAURI__.event.listen;
+    let stopped = false;
+    function render(s) {
+      if (!s || stopped) return;
+      el.textContent = s.text || '';
+      if (s.error) { el.classList.add('error'); spinner.style.display = 'none'; stopped = true; }
+      if (s.ready) { stopped = true; }
     }
+    // 主通道：轮询（不受事件早于监听器挂载的竞态影响）
+    if (invoke) {
+      (async function poll() {
+        while (!stopped) {
+          try { render(await invoke('get_status')); } catch (e) {}
+          await new Promise(r => setTimeout(r, 400));
+        }
+      })();
+    } else {
+      el.textContent = '运行环境异常，请重新安装 WebView2 运行时';
+      el.classList.add('error'); spinner.style.display = 'none';
+    }
+    // 辅助通道：事件推送（就绪后立即切换，减少轮询间隔延迟）
+    if (listen) { listen('startup-status', e => render(e.payload)); }
   </script>
 </body>
 </html>

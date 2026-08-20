@@ -172,7 +172,8 @@ $dshCmd = Join-Path $NodeDir "dsh.cmd"
 if (-not (Test-Path $dshCmd)) {
     Write-Info "安装 DSH 到便携版环境..."
     $ErrorActionPreference = "Continue"
-    $out = npm install -g @deepseek-ai/dsh --no-progress 2>&1 | ForEach-Object { "$_" }
+    # 锁定 rc.8：latest 标签当前指向 rc.7，缺少 dsh-memory 记忆工具所需的 defineTool 能力
+    $out = npm install -g @deepseek-ai/dsh@0.1.0-rc.8 --no-progress 2>&1 | ForEach-Object { "$_" }
     $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) {
         Write-Host ($out -join "`n") -ForegroundColor Red

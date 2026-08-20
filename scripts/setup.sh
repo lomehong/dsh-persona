@@ -127,7 +127,8 @@ export PATH="$NODE_DIR/bin:$PATH"
 step "安装 DSH（便携版环境）"
 if [[ ! -f "$NODE_DIR/bin/dsh" ]]; then
   info "安装 DSH…"
-  npm install -g @deepseek-ai/dsh --no-progress >/dev/null
+  # 锁定 rc.8：latest 标签当前指向 rc.7，缺少 dsh-memory 记忆工具所需的 defineTool 能力
+  npm install -g @deepseek-ai/dsh@0.1.0-rc.8 --no-progress >/dev/null
   [[ -f "$NODE_DIR/bin/dsh" ]] || { warn "DSH 安装失败"; exit 1; }
   ok "DSH 已安装到便携版环境"
 else
