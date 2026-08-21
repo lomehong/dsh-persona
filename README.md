@@ -4,20 +4,26 @@ DSH 数字分身的一键安装与分身指引 Tab。
 
 ## 快速安装
 
-### 方式一：一行命令安装（内网托管，无需 clone、无需 git）
+### 方式一：一行命令安装（GitHub raw，需仓库为 Public）
 
-把仓库根目录的 `install.ps1` 与仓库 zip 包（`git archive --format=zip --prefix=dsh-persona-main/ -o dsh-persona.zip HEAD` 生成）放到任意 HTTP 服务器上，目标机器上一行命令完成安装+启动：
+```powershell
+irm https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.ps1 | iex
+```
+
+自动下载仓库 zip（codeload，无需 git）→ 解压到 `~\dsh-persona\dsh-persona` → 分身配置向导
+→ 桌面快捷方式 → 询问后直接启动；重复执行即为更新。
+无人值守：先 `$env:DSP_SETUP_ARGS='-NonInteractive -Owner 甲子 -OwnerTitle 信息安全负责人'` 再执行。
+
+### 方式二：私有仓库 / 内网托管（无需 clone、无需 git）
+
+在任意 HTTP 服务器上托管仓库根目录的 `install.ps1` 与仓库 zip 包
+（`git archive --format=zip --prefix=dsh-persona-main/ -o dsh-persona.zip HEAD` 生成，更新时重新生成）：
 
 ```powershell
 $env:DSP_ZIP_URL='http://<服务器>/dsh-persona.zip'; irm http://<服务器>/install.ps1 | iex
 ```
 
-- 自动下载安装包 → 解压到 `~\dsh-persona\dsh-persona` → 进入分身配置向导 → 桌面快捷方式 → 询问后直接启动
-- 无人值守：`$env:DSP_SETUP_ARGS='-NonInteractive -Owner 甲子 -OwnerTitle 信息安全负责人'` 再执行上述命令
-- 仓库为公开且目标机器可直连 GitHub 时可不设 `DSP_ZIP_URL`（默认走 codeload）
-- 重复执行即为更新：自动重新下载安装包并覆盖
-
-### 方式二：clone 后一键安装
+### 方式三：clone 后一键安装
 
 无需预装 Node.js / DSH——脚本会自动下载**便携版 Node.js 24** 到 `%LOCALAPPDATA%\dsh-persona`，
 所有构建与运行都基于该便携环境，与系统 Node（及 nvm）完全隔离，不需要管理员权限。

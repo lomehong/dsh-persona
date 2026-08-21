@@ -1,12 +1,16 @@
 ﻿# DSH 数字分身 一行命令安装
 #
-# 用法（在内网服务器托管本文件与仓库压缩包后）：
-#   irm http://<服务器>/install.ps1 | iex
-# 内网/私有仓库场景，先指定仓库压缩包地址再执行（仍是一行）：
+# 标准用法（仓库为 Public 时，目标机器可直连 GitHub）：
+#   irm https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.ps1 | iex
+#
+# 私有仓库 / 内网场景：在任意 HTTP 服务器托管本文件与仓库 zip
+# （git archive --format=zip --prefix=dsh-persona-main/ -o dsh-persona.zip HEAD），
+# 目标机器执行（仍是一行）：
 #   $env:DSP_ZIP_URL='http://<服务器>/dsh-persona.zip'; irm http://<服务器>/install.ps1 | iex
 #
-# 不设置 DSP_ZIP_URL 时默认尝试 GitHub codeload（公开仓库可用）。
+# 不设置 DSP_ZIP_URL 时默认从 GitHub codeload 拉取（公开仓库可用）。
 # 本脚本也在仓库根目录内，直接 .\install.ps1 运行时跳过下载直接进入安装。
+# 无人值守：$env:DSP_SETUP_ARGS='-NonInteractive -Owner 甲子 -OwnerTitle 信息安全负责人'
 $ErrorActionPreference = "Stop"
 try { [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12 } catch {}
 
