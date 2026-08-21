@@ -159,6 +159,14 @@ fn command_exists(name: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// 检查命令是否可用（PATH 上能找到）
+#[cfg(not(windows))]
+fn command_exists(name: &str) -> bool {
+    let mut c = Command::new("sh");
+    c.args(["-c", &format!("command -v {name} >/dev/null 2>&1")]);
+    c.status().map(|s| s.success()).unwrap_or(false)
+}
+
 /// 只检测、不安装：node 与 dsh 都就绪才返回启动方式，否则提示先安装。
 #[cfg(windows)]
 fn bootstrap_runtime(_app: &tauri::AppHandle) -> Result<Launch, String> {
@@ -194,7 +202,15 @@ fn bootstrap_runtime(_app: &tauri::AppHandle) -> Result<Launch, String> {
 
 #[cfg(not(windows))]
 fn bootstrap_runtime(_app: &tauri::AppHandle) -> Result<Launch, String> {
-    Err("macOS 请先运行 scripts/setup.sh 完成安装（第二期交付）".into())
+    let node_path = node_exe();
+    let bin_path = dsh_bin_js();
+    if node_path.exists() && bin_path.exists() {
+        return Ok(Launch::Portable);
+    }
+    if command_exists("node") && command_exists("dsh") {
+        return Ok(Launch::System);
+    }
+    Err("未检测到数字分身运行环境。\n请先运行 scripts/setup.sh 完成安装。".into())
 }
 
 /* ───────────────────── 进程管理 ───────────────────── */
@@ -240,10 +256,20 @@ fn spawn_dsh(launch: Launch) -> Result<Child, String> {
             c
         }
         Launch::System => {
-            // 系统 node + 全局 dsh 命令：经 cmd 调用以解析 PATH 上的 dsh.cmd
-            let mut c = Command::new("cmd.exe");
-            c.args(["/C", "dsh", "web"]);
-            c
+            // 系统 node + 全局 dsh 命令
+            #[cfg(windows)]
+            {
+                // 经 cmd 调用以解析 PATH 上的 dsh.cmd
+                let mut c = Command::new("cmd.exe");
+                c.args(["/C", "dsh", "web"]);
+                c
+            }
+            #[cfg(not(windows))]
+            {
+                let mut c = Command::new("dsh");
+                c.arg("web");
+                c
+            }
         }
     };
     cmd.stdin(Stdio::null())
