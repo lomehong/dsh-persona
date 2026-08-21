@@ -153,26 +153,50 @@ fi
 mkdir -p "$PACKAGES_DIR"
 ok "插件目录: $PACKAGES_DIR"
 
-step "克隆仓库"
-clone_or_pull() { # $1=name $2=url
+step "获取插件仓库"
+# 优先 codeload tar.gz 下载（HTTPS 直连快、无需 git、绕开 git 协议被限的网络）；
+# 已有 .git 的目录仍走 git pull 更新；下载失败回退 git clone。
+fetch_repo() { # $1=name
   local dir="$PACKAGES_DIR/$1"
   if [[ -d "$dir/.git" ]]; then
-    ok "$1 已存在，拉取最新代码"
+    ok "$1 已存在（git），拉取最新代码"
     # 本地构建产物（lib/）会阻塞 pull：先尝试干净拉取，失败则丢弃本地改动重试
     if ! git -C "$dir" pull --ff-only >/dev/null 2>&1; then
       info "$1 拉取被本地改动阻塞，丢弃本地改动后重试"
       git -C "$dir" checkout -- . 2>/dev/null
-      git -C "$dir" pull --ff-only >/dev/null 2>&1
+      git -C "$dir" pull --ff-only >/dev/null 2>&1 || warn "$1 拉取失败，使用当前本地版本继续"
     fi
+    return
+  fi
+  info "下载 $1（tar.gz）…"
+  local tgz_dir ext tgz src d
+  tgz_dir="$(mktemp -d)"; ext="$(mktemp -d)"; tgz="$tgz_dir/$1.tar.gz"; src=""
+  if curl -fsSL --max-time 300 -o "$tgz" "https://codeload.github.com/lomehong/$1/tar.gz/refs/heads/main"; then
+    tar -xzf "$tgz" -C "$ext"
+    for d in "$ext"/*/; do
+      [[ -f "$d/package.json" || -d "$d/im-channel" ]] && { src="${d%/}"; break; }
+    done
+    if [[ -z "$src" ]]; then
+      warn "$1 安装包内容异常（未找到仓库根目录）"
+      rm -rf "$tgz_dir" "$ext"; exit 1
+    fi
+    rm -rf "$dir"
+    mv "$src" "$dir"
+    rm -rf "$tgz_dir" "$ext"
+    ok "$1 下载完成"
   else
-    info "克隆 $1…"
-    git clone "$2" "$dir" >/dev/null 2>&1
+    rm -rf "$tgz_dir" "$ext"
+    info "$1 tar 下载失败，回退 git clone…"
+    if ! git clone "https://github.com/lomehong/$1.git" "$dir"; then
+      warn "$1 获取失败（tar 与 git 均未成功），请检查网络后重试"
+      exit 1
+    fi
     ok "$1 克隆完成"
   fi
 }
-clone_or_pull dsh-memory "https://github.com/lomehong/dsh-memory.git"
-clone_or_pull dsh-im-bot  "https://github.com/lomehong/dsh-im-bot.git"
-clone_or_pull dsh-yuyi    "https://github.com/lomehong/dsh-yuyi.git"
+fetch_repo dsh-memory
+fetch_repo dsh-im-bot
+fetch_repo dsh-yuyi
 
 # ── 复制 dsh-persona-guide 与文档 ──
 step "复制分身指引插件"
