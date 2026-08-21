@@ -1,3 +1,5 @@
 # bat 必须保持 CRLF（cmd 批处理），且内容为 GBK 编码不可转码
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+# shell 脚本必须保持 LF（Linux/macOS 执行），且防 git archive 按 autocrlf 转 CRLF
+*.sh text eol=lf

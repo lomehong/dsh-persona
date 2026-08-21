@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 #
-# DSH 数字分身一键安装脚本（macOS 版）
+# DSH 数字分身一键安装脚本（macOS / Linux 版）
 # 与 setup.ps1（Windows）对等：便携版 Node、插件构建、digital-twin 预设、profile 配置。
-# 差异：junction → symlink（无需管理员权限）、运行时位于 ~/Library/Application Support。
+# 差异：junction → symlink（无需管理员权限）；
+#   macOS 运行时位于 ~/Library/Application Support/dsh-persona；
+#   Linux 运行时位于 ~/.local/share/dsh-persona。
 #
 set -euo pipefail
 
@@ -16,7 +18,12 @@ NODE_VERSION="24.19.0"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PERSONA_ROOT="$(dirname "$SCRIPT_DIR")"
-RUNTIME_ROOT="$HOME/Library/Application Support/dsh-persona"
+OS="$(uname)"
+case "$OS" in
+  Darwin) RUNTIME_ROOT="$HOME/Library/Application Support/dsh-persona" ;;
+  Linux)  RUNTIME_ROOT="${XDG_DATA_HOME:-$HOME/.local/share}/dsh-persona" ;;
+  *)      echo "  ⚠ 本脚本仅用于 macOS/Linux（Windows 请使用 scripts/setup.ps1）"; exit 1 ;;
+esac
 NODE_DIR="$RUNTIME_ROOT/node"
 PROFILE_DIR="$HOME/.dsh/profiles/web"
 DSH_AI_SCOPE="$NODE_DIR/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai"
@@ -45,8 +52,6 @@ step()  { printf '\n=== %s ===\n' "$1"; }
 ok()    { printf '  ✓ %s\n' "$1"; }
 info()  { printf '  → %s\n' "$1"; }
 warn()  { printf '  ⚠ %s\n' "$1"; }
-
-[[ "$(uname)" == "Darwin" ]] || { warn "本脚本仅用于 macOS（Windows 请使用 scripts/setup.ps1）"; exit 1; }
 
 # ── 分身信息配置（向导） ──
 read_field() { # $1=标签 $2=当前值 $3=默认值
@@ -98,12 +103,12 @@ step "准备 Node.js 运行环境"
 if [[ -x "$NODE_DIR/bin/node" ]]; then
   ok "便携版 Node.js 已就绪: $NODE_DIR/bin/node ($("$NODE_DIR/bin/node" -v))"
 else
-  ARCH="$(uname -m)"; [[ "$ARCH" == "arm64" ]] || ARCH="x64"
-  info "下载便携版 Node.js v$NODE_VERSION (darwin-$ARCH)…"
-  ZIP="$TMPDIR/node-v$NODE_VERSION-darwin-$ARCH.tar.gz"
+  ARCH="$(uname -m)"; case "$ARCH" in arm64|aarch64) ARCH="arm64" ;; *) ARCH="x64" ;; esac
+  info "下载便携版 Node.js v$NODE_VERSION ($OS-$ARCH)…"
+  ZIP="$TMPDIR/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
   MIRRORS=(
-    "https://npmmirror.com/mirrors/node/v$NODE_VERSION/node-v$NODE_VERSION-darwin-$ARCH.tar.gz"
-    "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-darwin-$ARCH.tar.gz"
+    "https://npmmirror.com/mirrors/node/v$NODE_VERSION/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
+    "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
   )
   DOWNLOADED=false
   for URL in "${MIRRORS[@]}"; do
@@ -117,7 +122,7 @@ else
   tar -xzf "$ZIP" -C "$EXTRACT_TMP"
   mkdir -p "$RUNTIME_ROOT"
   rm -rf "$NODE_DIR"
-  mv "$EXTRACT_TMP/node-v$NODE_VERSION-darwin-$ARCH" "$NODE_DIR"
+  mv "$EXTRACT_TMP/node-v$NODE_VERSION-$OS-$ARCH" "$NODE_DIR"
   rm -rf "$EXTRACT_TMP" "$ZIP"
   ok "便携版 Node.js 已安装: $NODE_DIR/bin/node ($("$NODE_DIR/bin/node" -v))"
 fi
@@ -171,13 +176,13 @@ clone_or_pull dsh-yuyi    "https://github.com/lomehong/dsh-yuyi.git"
 step "复制分身指引插件"
 GUIDE_DEST="$PACKAGES_DIR/dsh-persona-guide"
 rm -rf "$GUIDE_DEST"
-ditto "$PERSONA_ROOT/packages/dsh-persona-guide" "$GUIDE_DEST"
+cp -R "$PERSONA_ROOT/packages/dsh-persona-guide" "$GUIDE_DEST"
 rm -rf "$GUIDE_DEST/node_modules" "$GUIDE_DEST/lib"
 ok "dsh-persona-guide 已同步"
 
 DOCS_DEST="$HOME/.dsh/persona-docs"
 mkdir -p "$DOCS_DEST"
-ditto "$PERSONA_ROOT/docs" "$DOCS_DEST"
+cp -R "$PERSONA_ROOT/docs/." "$DOCS_DEST/"
 ok "文档已复制到: $DOCS_DEST"
 
 # ── 构建插件 ──
@@ -293,30 +298,55 @@ step "安装依赖"
 (cd "$PROFILE_DIR" && npm install --legacy-peer-deps --no-progress >/dev/null) || { warn "profile 依赖安装失败"; exit 1; }
 ok "依赖安装完成"
 
-# ── 桌面应用 ──
-step "安装桌面应用"
-APP_SRC_PREBUILT="$PERSONA_ROOT/dsh-persona.app"
-APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/dsh-persona.app"
-install_app() {
-  mkdir -p "$HOME/Applications"
-  rm -rf "$HOME/Applications/dsh-persona.app"
-  ditto "$1" "$HOME/Applications/dsh-persona.app"
-  ok "已安装到 ~/Applications/dsh-persona.app"
-}
-if [[ -d "$APP_SRC_PREBUILT" ]]; then
-  install_app "$APP_SRC_PREBUILT"
-elif [[ -d "$APP_BUNDLE" ]]; then
-  install_app "$APP_BUNDLE"
-elif command -v cargo >/dev/null 2>&1; then
-  # 真机构建（最推荐的验证路径；需要 Xcode Command Line Tools）
-  info "检测到 Rust 工具链，从源码构建桌面应用（约 5~10 分钟）…"
-  if (cd "$PERSONA_ROOT/app/src-tauri" && npx --yes @tauri-apps/cli@latest build --bundles app); then
-    [[ -d "$APP_BUNDLE" ]] && install_app "$APP_BUNDLE" || { warn "构建产物未找到，请检查上方日志"; }
-  else
-    warn "桌面应用构建失败（请确认已安装 Xcode Command Line Tools: xcode-select --install）"
-  fi
+# ── 启动器（Linux 无桌面应用，生成启动脚本；macOS 安装 .app） ──
+step "安装启动器"
+STARTER="$PACKAGES_DIR/start-persona.sh"
+if [[ "$OS" == "Linux" ]]; then
+  cat > "$STARTER" <<EOF
+#!/usr/bin/env bash
+# 数字分身启动器（Linux）：已运行则直接打开，否则后台拉起 dsh web 并打开浏览器
+export PATH="$NODE_DIR/bin:\$PATH"
+PORT=3080
+if curl -sf "http://127.0.0.1:\$PORT/" >/dev/null 2>&1; then
+  echo "数字分身已在运行: http://127.0.0.1:\$PORT"
+  command -v xdg-open >/dev/null 2>&1 && xdg-open "http://127.0.0.1:\$PORT"
+  exit 0
+fi
+( for i in \$(seq 1 60); do
+    curl -sf "http://127.0.0.1:\$PORT/" >/dev/null 2>&1 && {
+      command -v xdg-open >/dev/null 2>&1 && xdg-open "http://127.0.0.1:\$PORT"
+      break
+    }
+    sleep 1
+  done ) &
+exec dsh web
+EOF
+  chmod +x "$STARTER"
+  ok "启动器已生成: $STARTER（前台运行，Ctrl+C 停止）"
 else
-  info "未检测到 Rust 工具链，跳过桌面应用。可选：brew install rust 后重跑本脚本自动构建，或从 GitHub Actions Artifacts 下载"
+  APP_SRC_PREBUILT="$PERSONA_ROOT/dsh-persona.app"
+  APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/dsh-persona.app"
+  install_app() {
+    mkdir -p "$HOME/Applications"
+    rm -rf "$HOME/Applications/dsh-persona.app"
+    ditto "$1" "$HOME/Applications/dsh-persona.app"
+    ok "已安装到 ~/Applications/dsh-persona.app"
+  }
+  if [[ -d "$APP_SRC_PREBUILT" ]]; then
+    install_app "$APP_SRC_PREBUILT"
+  elif [[ -d "$APP_BUNDLE" ]]; then
+    install_app "$APP_BUNDLE"
+  elif command -v cargo >/dev/null 2>&1; then
+    # 真机构建（最推荐的验证路径；需要 Xcode Command Line Tools）
+    info "检测到 Rust 工具链，从源码构建桌面应用（约 5~10 分钟）…"
+    if (cd "$PERSONA_ROOT/app/src-tauri" && npx --yes @tauri-apps/cli@latest build --bundles app); then
+      [[ -d "$APP_BUNDLE" ]] && install_app "$APP_BUNDLE" || { warn "构建产物未找到，请检查上方日志"; }
+    else
+      warn "桌面应用构建失败（请确认已安装 Xcode Command Line Tools: xcode-select --install）"
+    fi
+  else
+    info "未检测到 Rust 工具链，跳过桌面应用。可选：brew install rust 后重跑本脚本自动构建，或从 GitHub Actions Artifacts 下载"
+  fi
 fi
 
 # ── 完成 ──
@@ -324,10 +354,13 @@ step "安装完成"
 ok "数字分身已安装完成！"
 echo
 echo "下一步："
-echo "  1. 打开 ~/Applications/dsh-persona.app（或运行: dsh web）"
-echo "  2. 浏览器访问 http://127.0.0.1:3080（App 模式自动打开）"
-echo "  3. 进入 设置 → 手机连接 配置企业微信"
-echo "  4. 在企业微信中发送 /bind 绑定为 Owner"
+if [[ "$OS" == "Linux" ]]; then
+  echo "  启动: $STARTER（前台运行，Ctrl+C 停止；自动打开浏览器）"
+  echo "  或后台运行: nohup $STARTER > ~/.local/share/dsh-persona/dsh-web.log 2>&1 &"
+else
+  echo "  打开 ~/Applications/dsh-persona.app（或运行: dsh web）"
+fi
+echo "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner"
 echo
 echo "运行时环境: $NODE_DIR"
 echo "插件目录: $PACKAGES_DIR"
@@ -339,10 +372,13 @@ if ! $NON_INTERACTIVE; then
   read -r -p "是否立即启动数字分身？(Y/n, 默认 Y): " v
 fi
 if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
-  if [[ -d "$HOME/Applications/dsh-persona.app" ]]; then
+  if [[ "$OS" == "Darwin" && -d "$HOME/Applications/dsh-persona.app" ]]; then
     open "$HOME/Applications/dsh-persona.app"
     ok "已启动 dsh-persona.app"
+  elif [[ "$OS" == "Linux" && -x "$STARTER" ]]; then
+    nohup "$STARTER" > "$RUNTIME_ROOT/dsh-web.log" 2>&1 &
+    ok "已在后台启动（日志: $RUNTIME_ROOT/dsh-web.log，停止: pkill -f 'dsh/lib/bin.js'）"
   else
-    info "未安装 dsh-persona.app，可手动运行: dsh web"
+    info "未找到启动器，可手动运行: dsh web"
   fi
 fi
