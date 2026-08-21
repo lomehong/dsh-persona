@@ -296,9 +296,11 @@ foreach ($repo in $repos) {
         Pop-Location
     } else {
         Write-Info "克隆 $($repo.name)..."
-        git clone $repo.url $repoPath 2>&1 | Out-Null
+        $cloneOut = git clone $repo.url $repoPath 2>&1 | ForEach-Object { "$_" }
         if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $repoPath ".git"))) {
-            Write-Warn "$($repo.name) 克隆失败，请检查网络/权限后重试"
+            # 输出 git 的真实报错（代理/证书/网络等原因各不相同，不能吞掉）
+            Write-Host ($cloneOut -join "`n") -ForegroundColor Red
+            Write-Warn "$($repo.name) 克隆失败，请依据上方 git 错误信息排查后重试"
             exit 1
         }
         Write-OK "$($repo.name) 克隆完成"
