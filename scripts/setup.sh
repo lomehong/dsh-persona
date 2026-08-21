@@ -179,7 +179,9 @@ ok "文档已复制到: $DOCS_DEST"
 # 与 Windows 版相同的注意事项：@deepseek-ai 系列 rc 包 peer 依赖冲突须 --legacy-peer-deps；
 # 构建后 prune 掉 devDependencies，需要运行时 peer 的插件改用 symlink 指向 DSH 自带依赖。
 build_plugin() { # $1=目录 $2=名称 $3=是否链接 DSH 依赖(1/0)
-  local dir="$1" name="$2" link="${3:-0}"
+  # ${N:-} 兜底：规避 bash 3.2 在 set -u 下 local 多赋值报 unbound variable
+  local dir="${1:-}" name="${2:-}" link="${3:-0}"
+  [[ -n "$dir" && -n "$name" ]] || { warn "build_plugin 参数缺失: dir='$dir' name='$name'"; exit 1; }
   info "构建 $name…"
   (
     cd "$dir"
