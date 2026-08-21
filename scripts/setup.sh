@@ -402,7 +402,8 @@ if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
     open "$HOME/Applications/dsh-persona.app"
     ok "已启动 dsh-persona.app"
   elif [[ "$OS" == "Linux" && -x "$STARTER" ]]; then
-    nohup "$STARTER" > "$RUNTIME_ROOT/dsh-web.log" 2>&1 &
+    # setsid 脱离会话进程组：WSL 等环境会在会话结束时清理整个进程组，nohup 不够
+    setsid nohup "$STARTER" > "$RUNTIME_ROOT/dsh-web.log" 2>&1 &
     ok "已在后台启动（日志: $RUNTIME_ROOT/dsh-web.log，停止: pkill -f 'dsh/lib/bin.js'）"
   else
     info "未找到启动器，可手动运行: dsh web"
