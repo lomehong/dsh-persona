@@ -282,7 +282,13 @@ foreach ($repo in $repos) {
     if (Test-Path (Join-Path $repoPath ".git")) {
         Write-OK "$($repo.name) 已存在，拉取最新代码"
         Push-Location $repoPath
+        # 本地构建产物（lib/）会阻塞 pull：先尝试干净拉取，失败则丢弃本地改动重试
         git pull --ff-only 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Info "$($repo.name) 拉取被本地改动阻塞，丢弃本地改动后重试"
+            git checkout -- . 2>&1 | Out-Null
+            git pull --ff-only 2>&1 | Out-Null
+        }
         Pop-Location
     } else {
         Write-Info "克隆 $($repo.name)..."

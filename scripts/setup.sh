@@ -151,7 +151,12 @@ clone_or_pull() { # $1=name $2=url
   local dir="$PACKAGES_DIR/$1"
   if [[ -d "$dir/.git" ]]; then
     ok "$1 已存在，拉取最新代码"
-    git -C "$dir" pull --ff-only >/dev/null 2>&1 || true
+    # 本地构建产物（lib/）会阻塞 pull：先尝试干净拉取，失败则丢弃本地改动重试
+    if ! git -C "$dir" pull --ff-only >/dev/null 2>&1; then
+      info "$1 拉取被本地改动阻塞，丢弃本地改动后重试"
+      git -C "$dir" checkout -- . 2>/dev/null
+      git -C "$dir" pull --ff-only >/dev/null 2>&1
+    fi
   else
     info "克隆 $1…"
     git clone "$2" "$dir" >/dev/null 2>&1
