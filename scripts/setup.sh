@@ -103,12 +103,14 @@ step "准备 Node.js 运行环境"
 if [[ -x "$NODE_DIR/bin/node" ]]; then
   ok "便携版 Node.js 已就绪: $NODE_DIR/bin/node ($("$NODE_DIR/bin/node" -v))"
 else
+  # nodejs.org 的包名用小写平台名（linux/darwin），uname 在 Linux 上返回大写
+  PLAT="$(printf '%s' "$OS" | tr '[:upper:]' '[:lower:]')"
   ARCH="$(uname -m)"; case "$ARCH" in arm64|aarch64) ARCH="arm64" ;; *) ARCH="x64" ;; esac
-  info "下载便携版 Node.js v$NODE_VERSION ($OS-$ARCH)…"
-  ZIP="$TMPDIR/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
+  info "下载便携版 Node.js v$NODE_VERSION ($PLAT-$ARCH)…"
+  ZIP="$TMPDIR/node-v$NODE_VERSION-$PLAT-$ARCH.tar.gz"
   MIRRORS=(
-    "https://npmmirror.com/mirrors/node/v$NODE_VERSION/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
-    "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-$OS-$ARCH.tar.gz"
+    "https://npmmirror.com/mirrors/node/v$NODE_VERSION/node-v$NODE_VERSION-$PLAT-$ARCH.tar.gz"
+    "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-$PLAT-$ARCH.tar.gz"
   )
   DOWNLOADED=false
   for URL in "${MIRRORS[@]}"; do
@@ -122,7 +124,7 @@ else
   tar -xzf "$ZIP" -C "$EXTRACT_TMP"
   mkdir -p "$RUNTIME_ROOT"
   rm -rf "$NODE_DIR"
-  mv "$EXTRACT_TMP/node-v$NODE_VERSION-$OS-$ARCH" "$NODE_DIR"
+  mv "$EXTRACT_TMP/node-v$NODE_VERSION-$PLAT-$ARCH" "$NODE_DIR"
   rm -rf "$EXTRACT_TMP" "$ZIP"
   ok "便携版 Node.js 已安装: $NODE_DIR/bin/node ($("$NODE_DIR/bin/node" -v))"
 fi
