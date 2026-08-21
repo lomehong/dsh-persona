@@ -297,6 +297,10 @@ foreach ($repo in $repos) {
     } else {
         Write-Info "克隆 $($repo.name)..."
         git clone $repo.url $repoPath 2>&1 | Out-Null
+        if ($LASTEXITCODE -ne 0 -or -not (Test-Path (Join-Path $repoPath ".git"))) {
+            Write-Warn "$($repo.name) 克隆失败，请检查网络/权限后重试"
+            exit 1
+        }
         Write-OK "$($repo.name) 克隆完成"
     }
     $packages += $repoPath
