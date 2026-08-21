@@ -26,7 +26,7 @@ $env:DSP_ZIP_URL='http://<服务器>/dsh-persona.zip'; irm http://<服务器>/in
 ### Linux / macOS 一行安装
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install-macos.sh | bash
 ```
 
 - 无需 git、无需 clone：codeload 下载仓库与全部插件（tar.gz）
@@ -91,7 +91,7 @@ cd dsh-persona
 ### 方式一：一行命令安装（推荐）
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install-macos.sh | bash
 ```
 
 等价于 Windows 的方式一，自动下载仓库、配置分身信息向导、安装桌面应用。
@@ -99,7 +99,7 @@ curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.s
 
 ```bash
 DSP_SETUP_ARGS='--non-interactive --owner "张三" --owner-title "首席技术官"' \
-  curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+  curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install-macos.sh | bash
 ```
 
 私有仓库 / 内网：在 HTTP 服务器上托管 `install.sh` 和仓库 zip 包，设置 `DSP_ZIP_URL`：
