@@ -245,14 +245,23 @@ fn spawn_dsh(launch: Launch) -> Result<Child, String> {
                 return Err("便携运行时就绪检查失败，请重新打开本程序。".into());
             }
             let node_dir = node.parent().map(|p| p.to_path_buf()).unwrap_or_default();
-            let sys = std::env::var("PATH").unwrap_or_default();
             let sep = if cfg!(windows) { ";" } else { ":" };
+            let sys = std::env::var("PATH").unwrap_or_default();
             let path_var = format!("{}{}{}", node_dir.display(), sep, sys);
             let mut c = Command::new(&node);
             c.arg(&bin)
                 .arg("web")
                 .env("PATH", &path_var)
                 .current_dir(node_dir);
+            // macOS .app bundle 环境缺少 HOME / NODE_PATH，Node.js ESM 模块解析依赖它们
+            #[cfg(not(windows))]
+            {
+                let home = std::env::var("HOME").unwrap_or_default();
+                let mut nm = runtime_root().join("node").join("lib").join("node_modules");
+                let dsh_nm = nm.join("@deepseek-ai").join("dsh").join("node_modules");
+                c.env("HOME", home)
+                 .env("NODE_PATH", format!("{}:{}", nm.display(), dsh_nm.display()));
+            }
             c
         }
         Launch::System => {

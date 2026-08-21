@@ -86,13 +86,33 @@ cd dsh-persona
 > 桌面应用基于 Tauri 2 构建（源码在 `app/`，Windows 用 WebView2、macOS 用 WKWebView，
 > 单一代码库跨平台）。应用首次运行需已通过 setup.ps1 完成安装。
 
-## macOS 安装（第二期）
+## macOS 安装
+
+### 方式一：一行命令安装（推荐）
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+```
+
+等价于 Windows 的方式一，自动下载仓库、配置分身信息向导、安装桌面应用。
+无人值守：先设置环境变量再执行：
+
+```bash
+DSP_SETUP_ARGS='--non-interactive --owner "张三" --owner-title "首席技术官"' \
+  curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+```
+
+私有仓库 / 内网：在 HTTP 服务器上托管 `install.sh` 和仓库 zip 包，设置 `DSP_ZIP_URL`：
+
+```bash
+curl -fsSL http://<服务器>/install.sh | DSP_ZIP_URL=http://<服务器>/dsh-persona.zip bash
+```
+
+### 方式二：clone 后本地安装
 
 ```bash
 git clone https://github.com/lomehong/dsh-persona.git
 cd dsh-persona
-./scripts/setup.sh -非交互参数示例见下
-# 等价于 Windows 的向导：每项留空回车用默认值
 ./scripts/setup.sh            # 交互式逐项配置
 ```
 
