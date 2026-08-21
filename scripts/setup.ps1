@@ -278,6 +278,9 @@ $repos = @(
 
 $packages = @()
 
+# Windows PowerShell 5.1 下 EAP=Stop 会把 git 输出到 stderr 的进度信息
+# （From https://... 等）当成终止错误中断脚本；git 段落临时放宽，用退出码判断成败
+$ErrorActionPreference = "Continue"
 foreach ($repo in $repos) {
     $repoPath = Join-Path $PackagesDir $repo.name
     if (Test-Path (Join-Path $repoPath ".git")) {
@@ -298,6 +301,7 @@ foreach ($repo in $repos) {
     }
     $packages += $repoPath
 }
+$ErrorActionPreference = "Stop"
 
 # ── 复制 dsh-persona-guide ──
 Write-Step "复制分身指引插件"
@@ -326,6 +330,21 @@ Copy-Item (Join-Path $PersonaRoot "启动数字分身.bat") $PackagesDir -Force
 Write-OK "启动脚本已复制到: $PackagesDir\启动数字分身.bat"
 $desktopExe = Join-Path $PersonaRoot "数字分身.exe"
 if (Test-Path $desktopExe) {
+    # Windows 不允许覆盖运行中的 exe：先关闭正在运行的数字分身（连同其 dsh 子进程）
+    $running = Get-Process -Name "数字分身" -ErrorAction SilentlyContinue
+    if ($running) {
+        Write-Info "检测到数字分身正在运行，正在关闭以便更新…"
+        Stop-Process -Name "数字分身" -Force -ErrorAction SilentlyContinue
+        Start-Sleep -Seconds 2
+        # 关掉被孤儿化的 dsh 子进程（强杀 exe 不触发其自身的清理逻辑）
+        $portProc = Get-NetTCPConnection -LocalPort 3080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+        if ($portProc) {
+            $ErrorActionPreference = "Continue"
+            taskkill /PID $portProc.OwningProcess /T /F 2>&1 | Out-Null
+            $ErrorActionPreference = "Stop"
+            Start-Sleep -Seconds 1
+        }
+    }
     Copy-Item $desktopExe $PackagesDir -Force
     Write-OK "桌面应用已复制到: $PackagesDir\数字分身.exe"
 }
