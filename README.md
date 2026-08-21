@@ -23,6 +23,19 @@ irm https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.ps1 | ie
 $env:DSP_ZIP_URL='http://<服务器>/dsh-persona.zip'; irm http://<服务器>/install.ps1 | iex
 ```
 
+### Linux / macOS 一行安装
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install.sh | bash
+```
+
+- 无需 git、无需 clone：codeload 下载仓库与全部插件（tar.gz）
+- Linux 运行时位于 `~/.local/share/dsh-persona`（macOS 为 `~/Library/Application Support/dsh-persona`）
+- 生成启动器 `~/dsh-persona/start-persona.sh`（Linux；已运行检测/自动开浏览器/前台 Ctrl+C 停止）
+- 无人值守：`export DSP_SETUP_ARGS='--non-interactive --owner 甲子 --owner-title 信息安全负责人'` 后执行
+- 内网托管：`export DSP_TARBALL_URL='http://<服务器>/dsh-persona.tar.gz'`（包用
+  `git archive --format=tar.gz --prefix=dsh-persona-main/ -o dsh-persona.tar.gz HEAD` 生成）
+
 ### 方式三：clone 后一键安装
 
 无需预装 Node.js / DSH——脚本会自动下载**便携版 Node.js 24** 到 `%LOCALAPPDATA%\dsh-persona`，
