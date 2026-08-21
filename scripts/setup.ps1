@@ -20,7 +20,8 @@ param(
     [string]$TwinName = "",
     [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
-    [switch]$NonInteractive = $false
+    [switch]$NonInteractive = $false,
+    [switch]$Launch = $false
 )
 
 $ErrorActionPreference = "Stop"
@@ -512,18 +513,50 @@ $ErrorActionPreference = "Stop"
 Pop-Location
 Write-OK "依赖安装完成"
 
+# ── 桌面快捷方式 ──
+$installedExe = Join-Path $PackagesDir "数字分身.exe"
+if (Test-Path $installedExe) {
+    try {
+        $desktop = [Environment]::GetFolderPath("Desktop")
+        $lnk = Join-Path $desktop "数字分身.lnk"
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($lnk)
+        $shortcut.TargetPath = $installedExe
+        $shortcut.WorkingDirectory = $PackagesDir
+        $shortcut.Description = "DSH 数字分身桌面应用"
+        $shortcut.Save()
+        Write-OK "桌面快捷方式已创建: $lnk"
+    } catch {
+        Write-Warn "桌面快捷方式创建失败: $_"
+    }
+}
+
 # ── 完成 ──
 Write-Step "安装完成"
 Write-OK "数字分身已安装完成！"
 Write-Host ""
-Write-Host "下一步：" -ForegroundColor Yellow
-Write-Host "  1. 双击运行 数字分身.exe（推荐：桌面应用，关闭窗口=最小化到托盘）" -ForegroundColor White
-Write-Host "     备用：双击 启动数字分身.bat（控制台 + 浏览器方式）" -ForegroundColor Gray
-Write-Host "  2. 浏览器会自动打开 http://127.0.0.1:3080" -ForegroundColor White
-Write-Host "  3. 进入 设置 → 手机连接 配置企业微信" -ForegroundColor White
-Write-Host "  4. 在企业微信中发送 /bind 绑定为 Owner" -ForegroundColor White
+Write-Host "使用方式：" -ForegroundColor Yellow
+Write-Host "  双击桌面的「数字分身」快捷方式（或 $PackagesDir\数字分身.exe）" -ForegroundColor White
+Write-Host "  关闭窗口=最小化到托盘，企业微信/御驿不中断；托盘右键菜单可退出/开机自启" -ForegroundColor Gray
+Write-Host "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner" -ForegroundColor Gray
 Write-Host ""
 Write-Host "运行时环境（与系统 Node 隔离）: $NodeDir" -ForegroundColor Gray
 Write-Host "插件目录: $PackagesDir" -ForegroundColor Gray
 Write-Host "文档目录: $docsDest" -ForegroundColor Gray
 Write-Host ""
+
+# ── 立即启动（安装程序式体验：装完即用） ──
+$shouldLaunch = $false
+if (Test-Path $installedExe) {
+    if ($Launch) {
+        $shouldLaunch = $true
+    } elseif (-not $NonInteractive) {
+        $launchInput = Read-Host "是否立即启动数字分身？(Y/n, 默认 Y)"
+        $shouldLaunch = ($launchInput -eq "" -or $launchInput -eq "y" -or $launchInput -eq "Y")
+    }
+}
+if ($shouldLaunch) {
+    Write-Info "正在启动数字分身…"
+    Start-Process $installedExe -WorkingDirectory $PackagesDir
+    Write-OK "已启动！窗口就绪后即可使用（首次启动约需 10~30 秒）"
+}

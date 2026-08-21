@@ -12,7 +12,17 @@ DSH 数字分身的一键安装与分身指引 Tab。
 ```powershell
 git clone https://github.com/lomehong/dsh-persona.git
 cd dsh-persona
-.\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret"
+.\一键安装数字分身.bat -BotId "你的BotID" -Secret "你的Secret"
+```
+
+`一键安装数字分身.bat` 是**安装程序式入口**：完整安装（便携运行时、插件构建、分身配置向导）
+→ 自动创建桌面快捷方式 → 询问「是否立即启动」，回车即启动——一个文件完成安装和启动。
+等价的手动方式是直接运行 `.\scripts\setup.ps1`（参数相同，末尾同样会询问启动）。
+
+也可不带参数安装（企业微信等稍后在设置页面配置）：
+
+```powershell
+.\一键安装数字分身.bat
 ```
 
 安装过程会以**向导形式逐步配置分身信息**，每一项留空回车即使用默认值：

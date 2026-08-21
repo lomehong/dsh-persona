@@ -332,3 +332,17 @@ echo
 echo "运行时环境: $NODE_DIR"
 echo "插件目录: $PACKAGES_DIR"
 echo "文档目录: $DOCS_DEST"
+
+# ── 立即启动（安装程序式体验：装完即用） ──
+v=""
+if ! $NON_INTERACTIVE; then
+  read -r -p "是否立即启动数字分身？(Y/n, 默认 Y): " v
+fi
+if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
+  if [[ -d "$HOME/Applications/数字分身.app" ]]; then
+    open "$HOME/Applications/数字分身.app"
+    ok "已启动 数字分身.app"
+  else
+    info "未安装 数字分身.app，可手动运行: dsh web"
+  fi
+fi
