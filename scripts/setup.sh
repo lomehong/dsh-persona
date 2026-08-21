@@ -295,13 +295,13 @@ ok "依赖安装完成"
 
 # ── 桌面应用 ──
 step "安装桌面应用"
-APP_SRC_PREBUILT="$PERSONA_ROOT/数字分身.app"
-APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/数字分身.app"
+APP_SRC_PREBUILT="$PERSONA_ROOT/dsh-persona.app"
+APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/dsh-persona.app"
 install_app() {
   mkdir -p "$HOME/Applications"
-  rm -rf "$HOME/Applications/数字分身.app"
-  ditto "$1" "$HOME/Applications/数字分身.app"
-  ok "已安装到 ~/Applications/数字分身.app"
+  rm -rf "$HOME/Applications/dsh-persona.app"
+  ditto "$1" "$HOME/Applications/dsh-persona.app"
+  ok "已安装到 ~/Applications/dsh-persona.app"
 }
 if [[ -d "$APP_SRC_PREBUILT" ]]; then
   install_app "$APP_SRC_PREBUILT"
@@ -324,7 +324,7 @@ step "安装完成"
 ok "数字分身已安装完成！"
 echo
 echo "下一步："
-echo "  1. 打开 ~/Applications/数字分身.app（或运行: dsh web）"
+echo "  1. 打开 ~/Applications/dsh-persona.app（或运行: dsh web）"
 echo "  2. 浏览器访问 http://127.0.0.1:3080（App 模式自动打开）"
 echo "  3. 进入 设置 → 手机连接 配置企业微信"
 echo "  4. 在企业微信中发送 /bind 绑定为 Owner"
@@ -332,17 +332,3 @@ echo
 echo "运行时环境: $NODE_DIR"
 echo "插件目录: $PACKAGES_DIR"
 echo "文档目录: $DOCS_DEST"
-
-# ── 立即启动（安装程序式体验：装完即用） ──
-v=""
-if ! $NON_INTERACTIVE; then
-  read -r -p "是否立即启动数字分身？(Y/n, 默认 Y): " v
-fi
-if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
-  if [[ -d "$HOME/Applications/数字分身.app" ]]; then
-    open "$HOME/Applications/数字分身.app"
-    ok "已启动 数字分身.app"
-  else
-    info "未安装 数字分身.app，可手动运行: dsh web"
-  fi
-fi
