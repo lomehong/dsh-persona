@@ -20,6 +20,7 @@ param(
     [string]$TwinName = "",
     [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
+    [string]$DesktopVersion = "0.1.2",
     [switch]$NonInteractive = $false,
     [switch]$Launch = $false
 )
@@ -334,25 +335,106 @@ Write-OK "文档已复制到: $docsDest"
 # ── 复制启动脚本与桌面应用 ──
 Copy-Item (Join-Path $PersonaRoot "启动数字分身.bat") $PackagesDir -Force
 Write-OK "启动脚本已复制到: $PackagesDir\启动数字分身.bat"
-$desktopExe = Join-Path $PersonaRoot "数字分身.exe"
-if (Test-Path $desktopExe) {
-    # Windows 不允许覆盖运行中的 exe：先关闭正在运行的数字分身（连同其 dsh 子进程）
-    $running = Get-Process -Name "数字分身" -ErrorAction SilentlyContinue
-    if ($running) {
-        Write-Info "检测到数字分身正在运行，正在关闭以便更新…"
-        Stop-Process -Name "数字分身" -Force -ErrorAction SilentlyContinue
-        Start-Sleep -Seconds 2
-        # 关掉被孤儿化的 dsh 子进程（强杀 exe 不触发其自身的清理逻辑）
-        $portProc = Get-NetTCPConnection -LocalPort 3080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($portProc) {
-            $ErrorActionPreference = "Continue"
-            taskkill /PID $portProc.OwningProcess /T /F 2>&1 | Out-Null
-            $ErrorActionPreference = "Stop"
-            Start-Sleep -Seconds 1
+
+# ── 桌面应用：安装 DSH Desktop（真桌面宿主，接替旧版 数字分身.exe）──
+# 从 GitHub Release 下载 NSIS 安装器静默安装（ghfast 代理兜底）；
+# 与本脚本共享 ~/.dsh（im-channel 绑定、共享记忆、分身 preset 全部沿用）。
+# NSIS 会沿用注册表里的上次 InstallLocation（历史装过 dsh-desktop\ 或 DSH-Desktop\ 均可能），
+# 因此安装位置用多候选 + 注册表解析，不硬编码。
+function Find-InstalledDesktopExe {
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "DSH-Desktop\DSH-Desktop.exe"),
+        (Join-Path $env:LOCALAPPDATA "DSH-Desktop\dsh-desktop.exe"),
+        (Join-Path $env:LOCALAPPDATA "dsh-desktop\DSH-Desktop.exe"),
+        (Join-Path $env:LOCALAPPDATA "dsh-desktop\dsh-desktop.exe")
+    )
+    foreach ($c in $candidates) { if (Test-Path $c) { return $c } }
+    $reg = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*" -ErrorAction SilentlyContinue |
+        Where-Object { $_.DisplayName -eq "DSH-Desktop" } | Select-Object -First 1
+    if ($reg -and $reg.DisplayIcon) {
+        $p = "$($reg.DisplayIcon)".Trim('"').Split(",")[0]
+        if ((Test-Path $p)) { return $p }
+    }
+    return $null
+}
+$InstalledDesktopExe = Find-InstalledDesktopExe
+$desktopOk = $false
+if ($InstalledDesktopExe) {
+    $installedVer = (Get-Item $InstalledDesktopExe).VersionInfo.ProductVersion
+    if ($installedVer -eq $DesktopVersion) {
+        $desktopOk = $true
+        Write-OK "DSH Desktop 已是 v$($installedVer): $InstalledDesktopExe"
+    }
+}
+if (-not $desktopOk) {
+    # 安装器不能覆盖运行中的 exe：关闭新旧两个应用
+    foreach ($procName in @("DSH-Desktop", "数字分身")) {
+        if (Get-Process -Name $procName -ErrorAction SilentlyContinue) {
+            Write-Info "正在关闭运行中的 $procName ..."
+            Stop-Process -Name $procName -Force -ErrorAction SilentlyContinue
+            Start-Sleep -Seconds 2
         }
     }
-    Copy-Item $desktopExe $PackagesDir -Force
-    Write-OK "桌面应用已复制到: $PackagesDir\数字分身.exe"
+    # 旧版强杀可能留下 3080 端口孤儿 node（新宿主用随机端口不受影响，但顺手清理）
+    $portProc = Get-NetTCPConnection -LocalPort 3080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($portProc) {
+        $ErrorActionPreference = "Continue"
+        taskkill /PID $portProc.OwningProcess /T /F 2>&1 | Out-Null
+        $ErrorActionPreference = "Stop"
+        Start-Sleep -Seconds 1
+    }
+    Write-Info "下载 DSH Desktop v$DesktopVersion 安装器（约 5MB）..."
+    $setupPath = Join-Path $env:TEMP "DSH-Desktop_${DesktopVersion}_x64-setup.exe"
+    $relPath = "lomehong/dsh-desktop/releases/download/v$DesktopVersion/DSH-Desktop_${DesktopVersion}_x64-setup.exe"
+    $mirrors = @(
+        "https://github.com/$relPath",
+        "https://ghfast.top/https://github.com/$relPath"
+    )
+    $downloaded = $false
+    foreach ($url in $mirrors) {
+        try {
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+            Invoke-WebRequest -Uri $url -OutFile $setupPath -UseBasicParsing
+            $downloaded = $true
+            break
+        } catch {
+            Write-Warn "下载失败，尝试下一个镜像: $($_.Exception.Message)"
+        }
+    }
+    if (-not $downloaded) {
+        Write-Warn "DSH Desktop 下载失败，跳过桌面应用安装（仍可用 启动数字分身.bat 以浏览器方式使用）"
+    } else {
+        Start-Process -FilePath $setupPath -ArgumentList "/S" -Wait
+        # 安装器可能沿用历史 InstallLocation（dsh-desktop\ 或 DSH-Desktop\），重新解析
+        $InstalledDesktopExe = Find-InstalledDesktopExe
+        if ($InstalledDesktopExe) {
+            $desktopOk = $true
+            Write-OK "DSH Desktop 已安装: $InstalledDesktopExe"
+        } else {
+            Write-Warn "安装器已执行但未找到 DSH Desktop（可手动运行 $setupPath 安装）"
+        }
+    }
+}
+
+# 旧版退役：删除旧 exe；「数字分身」快捷方式改指 DSH Desktop（保留熟悉的双击入口）
+$oldDesktopExe = Join-Path $PackagesDir "数字分身.exe"
+if (Test-Path $oldDesktopExe) {
+    Remove-Item $oldDesktopExe -Force
+    Write-OK "旧版 数字分身.exe 已移除（由 DSH Desktop 接替）"
+}
+if ($desktopOk) {
+    try {
+        $personaLnk = Join-Path ([Environment]::GetFolderPath("Desktop")) "数字分身.lnk"
+        $shell = New-Object -ComObject WScript.Shell
+        $shortcut = $shell.CreateShortcut($personaLnk)
+        $shortcut.TargetPath = $InstalledDesktopExe
+        $shortcut.WorkingDirectory = (Split-Path $InstalledDesktopExe)
+        $shortcut.Description = "DSH 数字分身桌面应用"
+        $shortcut.Save()
+        Write-OK "桌面快捷方式已创建: $personaLnk -> DSH Desktop"
+    } catch {
+        Write-Warn "桌面快捷方式创建失败: $_"
+    }
 }
 
 # ── 构建所有插件 ──
@@ -538,41 +620,29 @@ $ErrorActionPreference = "Stop"
 Pop-Location
 Write-OK "依赖安装完成"
 
-# ── 桌面快捷方式 ──
-$installedExe = Join-Path $PackagesDir "数字分身.exe"
-if (Test-Path $installedExe) {
-    try {
-        $desktop = [Environment]::GetFolderPath("Desktop")
-        $lnk = Join-Path $desktop "数字分身.lnk"
-        $shell = New-Object -ComObject WScript.Shell
-        $shortcut = $shell.CreateShortcut($lnk)
-        $shortcut.TargetPath = $installedExe
-        $shortcut.WorkingDirectory = $PackagesDir
-        $shortcut.Description = "DSH 数字分身桌面应用"
-        $shortcut.Save()
-        Write-OK "桌面快捷方式已创建: $lnk"
-    } catch {
-        Write-Warn "桌面快捷方式创建失败: $_"
-    }
-}
-
 # ── 完成 ──
 Write-Step "安装完成"
 Write-OK "数字分身已安装完成！"
 Write-Host ""
 Write-Host "使用方式：" -ForegroundColor Yellow
-Write-Host "  双击桌面的「数字分身」快捷方式（或 $PackagesDir\数字分身.exe）" -ForegroundColor White
+if ($desktopOk) {
+    Write-Host "  双击桌面的「数字分身」快捷方式（DSH Desktop 桌面宿主）" -ForegroundColor White
+} else {
+    Write-Host "  运行 $PackagesDir\启动数字分身.bat（浏览器方式）" -ForegroundColor White
+}
 Write-Host "  关闭窗口=最小化到托盘，企业微信/御驿不中断；托盘右键菜单可退出/开机自启" -ForegroundColor Gray
 Write-Host "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner" -ForegroundColor Gray
 Write-Host ""
 Write-Host "运行时环境（与系统 Node 隔离）: $NodeDir" -ForegroundColor Gray
 Write-Host "插件目录: $PackagesDir" -ForegroundColor Gray
 Write-Host "文档目录: $docsDest" -ForegroundColor Gray
+if ($desktopOk) { Write-Host "桌面应用: $InstalledDesktopExe" -ForegroundColor Gray }
 Write-Host ""
 
 # ── 立即启动（安装程序式体验：装完即用） ──
 $shouldLaunch = $false
-if (Test-Path $installedExe) {
+$launchTarget = if ($desktopOk) { $InstalledDesktopExe } else { Join-Path $PackagesDir "启动数字分身.bat" }
+if ($desktopOk -or (Test-Path (Join-Path $PackagesDir "启动数字分身.bat"))) {
     if ($Launch) {
         $shouldLaunch = $true
     } elseif (-not $NonInteractive) {
@@ -582,6 +652,6 @@ if (Test-Path $installedExe) {
 }
 if ($shouldLaunch) {
     Write-Info "正在启动数字分身…"
-    Start-Process $installedExe -WorkingDirectory $PackagesDir
+    Start-Process $launchTarget
     Write-OK "已启动！窗口就绪后即可使用（首次启动约需 10~30 秒）"
 }

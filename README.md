@@ -78,13 +78,16 @@ cd dsh-persona
 .\scripts\setup.ps1 -BotId "你的BotID" -Secret "你的Secret" -Owner "张三" -OwnerTitle "首席技术官" -OwnerAddress "张总"
 ```
 
-安装完成后，双击仓库根目录（或插件目录）的 **`数字分身.exe`** 启动——原生桌面应用窗口，
-**关闭窗口 = 最小化到系统托盘**（企业微信/御驿不中断），托盘右键菜单提供 显示/重启服务/
-开机自启/彻底退出；日常日志写入 `%LOCALAPPDATA%\dsh-persona\dsh-web.log`。备用方式：
-双击 `启动数字分身.bat`（控制台 + 浏览器）。
+安装完成后，双击桌面的 **`数字分身`** 快捷方式启动 **DSH Desktop** 桌面宿主（setup 自动从
+[lomehong/dsh-desktop](https://github.com/lomehong/dsh-desktop) Release 下载安装， ghfast 代理兜底）——
+无边框原生窗口 + OS 原生通知（回合完成/审批请求），**关闭窗口 = 最小化到系统托盘**
+（企业微信/御驿不中断），托盘右键菜单提供 显示/重启服务/升级 DSH/检查应用更新/开机自启/彻底退出。
+与本脚本共享 `~/.dsh`：im-channel 绑定、共享记忆、分身 preset 全部沿用。旧版 `数字分身.exe` 会被
+自动移除；备用方式：双击 `启动数字分身.bat`（控制台 + 浏览器）。桌面应用数据目录
+`%LOCALAPPDATA%\dsh-desktop-app-data`（v0.1.1+，与安装目录隔离）。
 
-> 桌面应用基于 Tauri 2 构建（源码在 `app/`，Windows 用 WebView2、macOS 用 WKWebView，
-> 单一代码库跨平台）。应用首次运行需已通过 setup.ps1 完成安装。
+> 桌面宿主源码在独立仓库 [dsh-persona/../dsh-desktop](https://github.com/lomehong/dsh-desktop)；
+> 本仓库 `app/` 下的旧 Tauri 壳已退役，仅保留参考。
 
 ## macOS 安装
 

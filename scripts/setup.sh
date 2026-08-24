@@ -349,28 +349,39 @@ EOF
   chmod +x "$STARTER"
   ok "启动器已生成: $STARTER（前台运行，Ctrl+C 停止）"
 else
-  APP_SRC_PREBUILT="$PERSONA_ROOT/dsh-persona.app"
-  APP_BUNDLE="$PERSONA_ROOT/app/src-tauri/target/release/bundle/macos/dsh-persona.app"
-  install_app() {
+  # ── macOS：安装 DSH Desktop 桌面宿主（从 GitHub Release 下载 dmg，接替旧 dsh-persona.app）──
+  DESKTOP_VERSION="${DESKTOP_VERSION:-0.1.2}"
+  DMG_NAME="DSH-Desktop_${DESKTOP_VERSION}_aarch64.dmg"
+  DMG_URL_BASE="lomehong/dsh-desktop/releases/download/v${DESKTOP_VERSION}/${DMG_NAME}"
+  APP_DEST="$HOME/Applications/DSH-Desktop.app"
+  install_desktop_app() {
     mkdir -p "$HOME/Applications"
-    rm -rf "$HOME/Applications/dsh-persona.app"
-    ditto "$1" "$HOME/Applications/dsh-persona.app"
-    ok "已安装到 ~/Applications/dsh-persona.app"
+    rm -rf "$HOME/Applications/dsh-persona.app" "$APP_DEST"
+    ditto "$1" "$APP_DEST"
+    # 绕过 Gatekeeper 首次运行确认（未签名分发的过渡方案）
+    xattr -cr "$APP_DEST" 2>/dev/null || true
+    ok "已安装到 $APP_DEST"
   }
-  if [[ -d "$APP_SRC_PREBUILT" ]]; then
-    install_app "$APP_SRC_PREBUILT"
-  elif [[ -d "$APP_BUNDLE" ]]; then
-    install_app "$APP_BUNDLE"
-  elif command -v cargo >/dev/null 2>&1; then
-    # 真机构建（最推荐的验证路径；需要 Xcode Command Line Tools）
-    info "检测到 Rust 工具链，从源码构建桌面应用（约 5~10 分钟）…"
-    if (cd "$PERSONA_ROOT/app/src-tauri" && npx --yes @tauri-apps/cli@latest build --bundles app); then
-      [[ -d "$APP_BUNDLE" ]] && install_app "$APP_BUNDLE" || { warn "构建产物未找到，请检查上方日志"; }
+  DMG_PATH="$(mktemp -d)/${DMG_NAME}"
+  DMG_FETCHED=0
+  for u in "https://github.com/${DMG_URL_BASE}" "https://ghfast.top/https://github.com/${DMG_URL_BASE}"; do
+    info "下载 DSH Desktop v${DESKTOP_VERSION}（${u%%/*}）…"
+    if curl -fSL --connect-timeout 20 -o "$DMG_PATH" "$u"; then DMG_FETCHED=1; break; fi
+  done
+  if [[ "$DMG_FETCHED" == "1" ]]; then
+    MNT="$(mktemp -d)"
+    if hdiutil attach -nobrowse -readonly -mountpoint "$MNT" "$DMG_PATH" >/dev/null 2>&1; then
+      if [[ -d "$MNT/DSH-Desktop.app" ]]; then
+        install_desktop_app "$MNT/DSH-Desktop.app"
+      else
+        warn "dmg 中未找到 DSH-Desktop.app，跳过桌面应用"
+      fi
+      hdiutil detach "$MNT" >/dev/null 2>&1 || true
     else
-      warn "桌面应用构建失败（请确认已安装 Xcode Command Line Tools: xcode-select --install）"
+      warn "dmg 挂载失败，跳过桌面应用"
     fi
   else
-    info "未检测到 Rust 工具链，跳过桌面应用。可选：brew install rust 后重跑本脚本自动构建，或从 GitHub Actions Artifacts 下载"
+    warn "DSH Desktop 下载失败，跳过桌面应用（可用 $PACKAGES_DIR/start-persona.sh 以浏览器方式使用）"
   fi
 fi
 
@@ -383,7 +394,11 @@ if [[ "$OS" == "Linux" ]]; then
   echo "  启动: $STARTER（前台运行，Ctrl+C 停止；自动打开浏览器）"
   echo "  或后台运行: nohup $STARTER > ~/.local/share/dsh-persona/dsh-web.log 2>&1 &"
 else
-  echo "  打开 ~/Applications/dsh-persona.app（或运行: dsh web）"
+  if [[ -d "$HOME/Applications/DSH-Desktop.app" ]]; then
+    echo "  打开 ~/Applications/DSH-Desktop.app（或运行: dsh web）"
+  else
+    echo "  运行 $STARTER（浏览器方式，或重跑脚本安装桌面应用）"
+  fi
 fi
 echo "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner"
 echo
