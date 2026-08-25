@@ -44,16 +44,17 @@ jobs:
       - name: bash 语法检查
         run: |
           status=0
-          while IFS= read -r f; do
+          # -z + NUL 分隔：中文文件名（一键安装数字分身.command 等）不会被 git 引号转义
+          while IFS= read -r -d '' f; do
             bash -n "$f" || status=1
-          done < <(git ls-files '*.sh' '*.command')
+          done < <(git ls-files -z '*.sh' '*.command')
           exit $status
 
       - name: PowerShell 语法检查
         shell: pwsh
         run: |
           $status = 0
-          foreach ($f in (git ls-files '*.ps1')) {
+          foreach ($f in (git -c core.quotePath=false ls-files '*.ps1')) {
             $err = $null
             [System.Management.Automation.PSParser]::Tokenize((Get-Content $f -Raw), [ref]$err) | Out-Null
             if ($err.Count -gt 0) {
