@@ -22,6 +22,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# 空串参数回退默认值（CI 传参时空环境变量会以空串覆盖 param 默认值）
+if (-not $DshVersion) { $DshVersion = "0.1.1-rc.2" }
+if (-not $DesktopVersion) { $DesktopVersion = "0.1.4" }
+if (-not $NodeVersion) { $NodeVersion = "24.19.0" }
+
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $PersonaRoot = Split-Path -Parent $ScriptRoot
 

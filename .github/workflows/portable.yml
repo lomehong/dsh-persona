@@ -47,8 +47,13 @@ jobs:
       - name: 运行 make-portable.ps1
         shell: powershell
         run: |
-          & .\scripts\make-portable.ps1 -DshVersion $env:dsh_version -DesktopVersion $env:desktop_version -NodeVersion $env:node_version
-          if ($LASTEXITCODE -ne 0 -and -not $?) { exit 1 }
+          # 动态构建参数：空值不传（空串会覆盖脚本内默认值）；$args 是自动变量不可用
+          $mpArgs = @()
+          if ($env:dsh_version) { $mpArgs += @("-DshVersion", $env:dsh_version) }
+          if ($env:desktop_version) { $mpArgs += @("-DesktopVersion", $env:desktop_version) }
+          if ($env:node_version) { $mpArgs += @("-NodeVersion", $env:node_version) }
+          & .\scripts\make-portable.ps1 @mpArgs
+          if (-not $?) { exit 1 }
 
       - name: 上传 Artifact
         uses: actions/upload-artifact@v4
