@@ -1,0 +1,163 @@
+name: ci
+
+# 数字分身主 CI：安装链路三平台冒烟
+# 覆盖当前产品面——setup 脚本 + 6 个默认插件（memory/im-bot×2/yuyi/model-failover/guide）+ docs 分发。
+# build-installer.yml（GUI 安装向导，app/installer）独立演进，与本文件互不依赖。
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'packages/**'
+      - 'install.ps1'
+      - 'install.sh'
+      - '一键安装*'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - 'packages/**'
+      - 'install.ps1'
+      - 'install.sh'
+      - '一键安装*'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # 静态检查：shell / PowerShell 语法（秒级，挡住低级错误）
+  # ─────────────────────────────────────────────────────────────────
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: bash 语法检查
+        run: |
+          status=0
+          while IFS= read -r f; do
+            bash -n "$f" || status=1
+          done < <(git ls-files '*.sh' '*.command')
+          exit $status
+
+      - name: PowerShell 语法检查
+        shell: pwsh
+        run: |
+          $status = 0
+          foreach ($f in (git ls-files '*.ps1')) {
+            $err = $null
+            [System.Management.Automation.PSParser]::Tokenize((Get-Content $f -Raw), [ref]$err) | Out-Null
+            if ($err.Count -gt 0) {
+              $err | ForEach-Object { "::error file=$f,line=$($_.Token.StartLine)::$($_.Message)" }
+              $status = 1
+            }
+          }
+          exit $status
+
+  # ─────────────────────────────────────────────────────────────────
+  # macOS / Linux：setup.sh 非交互完整安装 → 启动 dsh web → 插件探针
+  # ─────────────────────────────────────────────────────────────────
+  smoke-macos:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行 setup.sh（非交互完整安装）
+        run: bash scripts/setup.sh --non-interactive
+
+      - name: 冒烟：dsh web 可启动、默认插件可加载
+        run: |
+          export PATH="$HOME/Library/Application Support/dsh-persona/node/bin:$PATH"
+          pkill -f 'dsh/lib/bin.js' 2>/dev/null || true
+          nohup dsh web --no-open --port 3080 > /tmp/dsh-web.log 2>&1 &
+          ok=""
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3080/ && { ok=1; break; }
+            sleep 2
+          done
+          if [ -z "$ok" ]; then tail -30 /tmp/dsh-web.log; exit 1; fi
+          # 新默认插件 model-failover 的状态端点（服务端加载探针）
+          curl -sf http://127.0.0.1:3080/model-failover/api/status | grep -q '"ok":true' || { echo "model-failover 状态端点异常"; exit 1; }
+          # 默认插件全部装入 profile
+          for p in im-channel dsh-memory dsh-persona-guide dsh-model-failover; do
+            test -d "$HOME/.dsh/profiles/web/node_modules/@dsh-extra/$p" || { echo "缺少插件 @dsh-extra/$p"; exit 1; }
+          done
+          test -d "$HOME/.dsh/profiles/web/node_modules/dsh-yuyi" || { echo "缺少插件 dsh-yuyi"; exit 1; }
+          echo "冒烟通过：web 就绪 + 6 插件就位"
+
+  smoke-linux:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行 setup.sh（非交互完整安装）
+        run: bash scripts/setup.sh --non-interactive
+
+      - name: 冒烟：dsh web 可启动、默认插件可加载
+        run: |
+          export PATH="${XDG_DATA_HOME:-$HOME/.local/share}/dsh-persona/node/bin:$PATH"
+          pkill -f 'dsh/lib/bin.js' 2>/dev/null || true
+          nohup dsh web --no-open --port 3080 > /tmp/dsh-web.log 2>&1 &
+          ok=""
+          for i in $(seq 1 60); do
+            curl -sf -o /dev/null http://127.0.0.1:3080/ && { ok=1; break; }
+            sleep 2
+          done
+          if [ -z "$ok" ]; then tail -30 /tmp/dsh-web.log; exit 1; fi
+          curl -sf http://127.0.0.1:3080/model-failover/api/status | grep -q '"ok":true' || { echo "model-failover 状态端点异常"; exit 1; }
+          for p in im-channel dsh-memory dsh-persona-guide dsh-model-failover; do
+            test -d "$HOME/.dsh/profiles/web/node_modules/@dsh-extra/$p" || { echo "缺少插件 @dsh-extra/$p"; exit 1; }
+          done
+          test -d "$HOME/.dsh/profiles/web/node_modules/dsh-yuyi" || { echo "缺少插件 dsh-yuyi"; exit 1; }
+          echo "冒烟通过：web 就绪 + 6 插件就位"
+
+  # ─────────────────────────────────────────────────────────────────
+  # Windows：setup.ps1 非交互完整安装（含 DSH Desktop NSIS 安装路径）→ 启动 → 探针
+  # 用 Windows PowerShell 5.1 运行，与真实用户入口（一键安装数字分身.bat）一致
+  # ─────────────────────────────────────────────────────────────────
+  smoke-windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 运行 setup.ps1（非交互完整安装）
+        shell: powershell
+        run: |
+          & .\scripts\setup.ps1 -NonInteractive
+          if ($LASTEXITCODE -ne 0 -and $? -eq $false) { exit 1 }
+
+      - name: 冒烟：dsh web 可启动、默认插件可加载
+        shell: pwsh
+        run: |
+          $env:Path = "$env:LOCALAPPDATA\dsh-persona\node;$env:Path"
+          $proc = Start-Process -FilePath "$env:LOCALAPPDATA\dsh-persona\node\dsh.cmd" `
+            -ArgumentList 'web','--no-open','--port','3080' -PassThru -WindowStyle Hidden
+          $ok = $false
+          foreach ($i in 1..60) {
+            try {
+              Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3080/' -TimeoutSec 3 | Out-Null
+              $ok = $true; break
+            } catch { Start-Sleep -Seconds 2 }
+          }
+          if (-not $ok) { Write-Host 'dsh web 未能在 120 秒内就绪'; exit 1 }
+          $probe = (Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:3080/model-failover/api/status' -TimeoutSec 5).Content
+          if ($probe -notmatch '"ok":true') { Write-Host "model-failover 状态端点异常: $probe"; exit 1 }
+          $profileRoot = "$env:USERPROFILE\.dsh\profiles\web\node_modules\@dsh-extra"
+          foreach ($p in 'im-channel','dsh-memory','dsh-persona-guide','dsh-model-failover') {
+            if (-not (Test-Path (Join-Path $profileRoot $p))) { Write-Host "缺少插件 @dsh-extra/$p"; exit 1 }
+          }
+          if (-not (Test-Path "$env:USERPROFILE\.dsh\profiles\web\node_modules\dsh-yuyi")) { Write-Host '缺少插件 dsh-yuyi'; exit 1 }
+          Write-Host '冒烟通过：web 就绪 + 6 插件就位'
+          taskkill /PID $proc.Id /T /F 2>$null | Out-Null

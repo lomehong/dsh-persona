@@ -423,19 +423,20 @@ echo "插件目录: $PACKAGES_DIR"
 echo "文档目录: $DOCS_DEST"
 
 # ── 立即启动（安装程序式体验：装完即用） ──
-v=""
+# --non-interactive 不启动（对齐 setup.ps1）：CI/调度方自行拉起，避免遗留后台进程
 if ! $NON_INTERACTIVE; then
+  v=""
   read -r -p "是否立即启动数字分身？(Y/n, 默认 Y): " v
-fi
-if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
-  if [[ "$OS" == "Darwin" && -d "$HOME/Applications/dsh-persona.app" ]]; then
-    open "$HOME/Applications/dsh-persona.app"
-    ok "已启动 dsh-persona.app"
-  elif [[ "$OS" == "Linux" && -x "$STARTER" ]]; then
-    # setsid 脱离会话进程组：WSL 等环境会在会话结束时清理整个进程组，nohup 不够
-    setsid nohup "$STARTER" > "$RUNTIME_ROOT/dsh-web.log" 2>&1 &
-    ok "已在后台启动（日志: $RUNTIME_ROOT/dsh-web.log，停止: pkill -f 'dsh/lib/bin.js'）"
-  else
-    info "未找到启动器，可手动运行: dsh web"
+  if [[ -z "$v" || "$v" == "Y" || "$v" == "y" ]]; then
+    if [[ "$OS" == "Darwin" && -d "$HOME/Applications/DSH-Desktop.app" ]]; then
+      open "$HOME/Applications/DSH-Desktop.app"
+      ok "已启动 DSH-Desktop.app"
+    elif [[ "$OS" == "Linux" && -x "$STARTER" ]]; then
+      # setsid 脱离会话进程组：WSL 等环境会在会话结束时清理整个进程组，nohup 不够
+      setsid nohup "$STARTER" > "$RUNTIME_ROOT/dsh-web.log" 2>&1 &
+      ok "已在后台启动（日志: $RUNTIME_ROOT/dsh-web.log，停止: pkill -f 'dsh/lib/bin.js'）"
+    else
+      info "未找到启动器，可手动运行: dsh web"
+    fi
   fi
 fi
