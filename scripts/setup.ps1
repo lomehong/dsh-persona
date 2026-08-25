@@ -192,17 +192,33 @@ if ((Test-Path $dshCmd) -and -not $forceReinstall) {
         Write-Info "安装 DSH 到便携版环境..."
     }
     $ErrorActionPreference = "Continue"
-    $out = npm install -g "@deepseek-ai/dsh@$DshVersion" --no-progress 2>&1 | ForEach-Object { "$_" }
+    # --prefix 显式指定安装位置：CI 等 environments 可能带着别的全局 npm 配置
+    # （预装 Node 的 npmrc/prefix），不指定会把 DSH 装到别处，后续 junction 全部落空。
+    # setup.sh 一直用 --prefix，macOS/Linux CI 已验证该做法。
+    $out = npm install -g "@deepseek-ai/dsh@$DshVersion" --prefix "$NodeDir" --no-progress 2>&1 | ForEach-Object { "$_" }
     $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) {
         Write-Host ($out -join "`n") -ForegroundColor Red
         Write-Warn "DSH 安装失败 (npm 退出码 $LASTEXITCODE)，详见上方日志"
         exit 1
     }
+    if (-not (Test-Path $dshCmd)) {
+        Write-Host ($out -join "`n") -ForegroundColor Red
+        Write-Warn "DSH 安装声称成功但未找到 $dshCmd（npm prefix 被外部配置覆盖？）"
+        exit 1
+    }
     Write-OK "DSH 已安装到便携版环境"
 }
-# DSH 包自带的 @deepseek-ai 依赖作用域，运行时通过 junction 提供给需要的插件
+# DSH 包自带的 @deepseek-ai 依赖作用域，运行时通过 junction 提供给需要的插件。
+# npm 会把 dsh 的 62 个依赖嵌套装在 dsh\node_modules 下；个别环境下若被展平到
+# 顶层作用域（node\node_modules\@deepseek-ai），则退回用顶层作用域。
 $DshAIScope = Join-Path $NodeDir "node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai"
+if (-not (Test-Path $DshAIScope)) {
+    $flatScope = Join-Path $NodeDir "node_modules\@deepseek-ai"
+    if ((Test-Path (Join-Path $flatScope "dsh-settings")) -and (Test-Path (Join-Path $flatScope "dsh-base"))) {
+        $DshAIScope = $flatScope
+    }
+}
 
 # ── 确定安装目录 ──
 Write-Step "确定安装目录"
