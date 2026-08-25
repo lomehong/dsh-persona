@@ -1,0 +1,11 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\fdeflate-716f6b005b2d11fd.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\compress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\decompress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\huffman.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\tables.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libfdeflate-716f6b005b2d11fd.rlib: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\compress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\decompress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\huffman.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\tables.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libfdeflate-716f6b005b2d11fd.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\compress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\decompress.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\huffman.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\tables.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\compress.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\decompress.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\huffman.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\fdeflate-0.3.7\src\tables.rs:

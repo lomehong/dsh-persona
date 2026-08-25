@@ -1,0 +1,10 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\zerovec_derive-533e71b4c90f1ca7.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_ule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_varule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\ule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\utils.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\varule.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\zerovec_derive-533e71b4c90f1ca7.dll: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_ule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_varule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\ule.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\utils.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\varule.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_ule.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\make_varule.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\ule.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\utils.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\zerovec-derive-0.11.6\src\varule.rs:

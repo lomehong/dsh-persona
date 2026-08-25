@@ -1,0 +1,12 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\thiserror-bdab02dc64303cc0.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\aserror.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\display.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\var.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\private.rs F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\thiserror-495ebad1f62d95f8\out/private.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libthiserror-bdab02dc64303cc0.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\aserror.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\display.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\var.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\private.rs F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\thiserror-495ebad1f62d95f8\out/private.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\aserror.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\display.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\var.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\thiserror-2.0.20\src\private.rs:
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\thiserror-495ebad1f62d95f8\out/private.rs:
+
+# env-dep:OUT_DIR=F:\\Development\\workspace\\dsh\\dsh-persona\\app\\installer\\target\\debug\\build\\thiserror-495ebad1f62d95f8\\out

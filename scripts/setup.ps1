@@ -21,7 +21,7 @@ param(
     [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
     [string]$DshVersion = "0.1.1-rc.2",
-    [string]$DesktopVersion = "0.1.2",
+    [string]$DesktopVersion = "0.1.3",
     [switch]$NonInteractive = $false,
     [switch]$Launch = $false
 )
@@ -436,6 +436,13 @@ if ($desktopOk) {
         Write-OK "桌面快捷方式已创建: $personaLnk -> DSH Desktop"
     } catch {
         Write-Warn "桌面快捷方式创建失败: $_"
+    }
+    # 清理 NSIS 安装器历史自建的桌面快捷方式（v0.1.3 起安装器已关闭桌面快捷，
+    # 桌面只保留「数字分身」一个入口）
+    $nsisLnk = Join-Path ([Environment]::GetFolderPath("Desktop")) "DSH-Desktop.lnk"
+    if (Test-Path $nsisLnk) {
+        Remove-Item $nsisLnk -Force
+        Write-OK "已清理重复的 DSH-Desktop 桌面快捷方式"
     }
 }
 

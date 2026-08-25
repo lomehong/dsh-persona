@@ -1,0 +1,11 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\semver-5292263450113874.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\display.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\error.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\eval.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\identifier.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\impls.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\parse.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libsemver-5292263450113874.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\display.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\error.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\eval.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\identifier.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\impls.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\parse.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\display.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\error.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\eval.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\identifier.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\impls.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\semver-1.0.28\src\parse.rs:

@@ -1,0 +1,10 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\windows_future-9e66d3dc096cfc22.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings_impl.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\get.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\waiter.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\../readme.md
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libwindows_future-9e66d3dc096cfc22.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings_impl.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\get.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\waiter.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\../readme.md
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\bindings_impl.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\get.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\waiter.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\windows-future-0.2.1\src\../readme.md:

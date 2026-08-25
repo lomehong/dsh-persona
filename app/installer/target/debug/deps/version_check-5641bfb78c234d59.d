@@ -1,0 +1,10 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\version_check-5641bfb78c234d59.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\version.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\channel.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\date.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libversion_check-5641bfb78c234d59.rlib: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\version.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\channel.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\date.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libversion_check-5641bfb78c234d59.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\version.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\channel.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\date.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\version.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\channel.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\version_check-0.9.5\src\date.rs:

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DSH 数字分身 - 安装向导</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="bar">
+    <div class="brand">
+      <div class="logo">分</div>
+      <div class="brand-text">
+        <div class="title">DSH 数字分身</div>
+        <div class="subtitle">安装向导</div>
+      </div>
+    </div>
+    <ol class="steps" id="step-indicator">
+      <li data-step="0" class="active"><span>1</span>欢迎</li>
+      <li data-step="1"><span>2</span>环境检查</li>
+      <li data-step="2"><span>3</span>分身信息</li>
+      <li data-step="3"><span>4</span>安装</li>
+    </ol>
+  </header>
+
+  <main class="content">
+    <!-- 屏 1：欢迎 -->
+    <section class="screen" data-screen="0">
+      <h1>欢迎使用 DSH 数字分身</h1>
+      <p class="lead">
+        本向导会引导你完成 DSH 数字分身的安装与配置：便携版运行环境、分身人设、桌面应用与快捷方式。
+      </p>
+      <ul class="bullets">
+        <li>自动下载并安装便携版 Node.js + DSH（无需管理员权限、不影响系统 Node）</li>
+        <li>一键克隆并构建 dsh-memory / dsh-im-bot / dsh-yuyi / dsh-persona-guide 插件</li>
+        <li>写入数字分身预设（人设、称呼、别名），随时可在 DSH 设置中调整</li>
+        <li>下载并安装 DSH Desktop 桌面宿主，创建桌面「数字分身」快捷方式</li>
+      </ul>
+      <p class="hint">建议在安装前关闭企业微信 / 浏览器等可能占用 3080 端口的程序。</p>
+    </section>
+
+    <!-- 屏 2：环境检查 -->
+    <section class="screen" data-screen="1" hidden>
+      <h1>环境检查</h1>
+      <p class="lead">向导将自动检查本机 Node、Git 与网络可达性。</p>
+      <div id="prereq-list" class="prereq">
+        <div class="prereq-item"><span class="dot pending" id="dot-node"></span><span class="label">Node.js</span><span class="value" id="val-node">检测中…</span></div>
+        <div class="prereq-item"><span class="dot pending" id="dot-git"></span><span class="label">Git</span><span class="value" id="val-git">检测中…</span></div>
+        <div class="prereq-item"><span class="dot pending" id="dot-net"></span><span class="label">GitHub 网络</span><span class="value" id="val-net">检测中…</span></div>
+        <div class="prereq-item"><span class="dot pending" id="dot-script"></span><span class="label">安装脚本</span><span class="value" id="val-script">检测中…</span></div>
+      </div>
+      <p class="hint" id="prereq-hint"></p>
+      <div class="field">
+        <label for="packagesDir">插件安装目录</label>
+        <input id="packagesDir" type="text" placeholder="留空使用默认 ~/dsh-persona" />
+      </div>
+    </section>
+
+    <!-- 屏 3：分身信息 -->
+    <section class="screen" data-screen="2" hidden>
+      <h1>分身信息</h1>
+      <p class="lead">描述你与数字分身的关系，留空使用默认值。</p>
+      <div class="grid">
+        <div class="field">
+          <label for="owner">1/8 主人姓名</label>
+          <input id="owner" type="text" placeholder="主人" />
+        </div>
+        <div class="field">
+          <label for="ownerTitle">2/8 职务/角色</label>
+          <input id="ownerTitle" type="text" placeholder="公司副总裁" />
+        </div>
+        <div class="field">
+          <label for="ownerStance">3/8 人设定位</label>
+          <input id="ownerStance" type="text" placeholder="专属 AI 协作伙伴" />
+        </div>
+        <div class="field">
+          <label for="ownerScope">4/8 分管领域</label>
+          <textarea id="ownerScope" rows="2" placeholder="人力资源、审计、信息安全、总裁办等"></textarea>
+        </div>
+        <div class="field">
+          <label for="ownerStyle">5/8 工作习惯/沟通风格</label>
+          <textarea id="ownerStyle" rows="3" placeholder="直接、务实、结构化。先说结论再展开。"></textarea>
+        </div>
+        <div class="field">
+          <label for="ownerAddress">6/8 称呼习惯</label>
+          <input id="ownerAddress" type="text" placeholder="主人" />
+        </div>
+        <div class="field">
+          <label for="twinName">7/8 分身名字</label>
+          <input id="twinName" type="text" placeholder="{主人姓名}的数字分身" />
+        </div>
+        <div class="field">
+          <label for="twinAliases">8/8 分身别名（逗号分隔）</label>
+          <input id="twinAliases" type="text" placeholder="分身" />
+        </div>
+      </div>
+      <details class="advanced">
+        <summary>企业微信 / MCP（可选）</summary>
+        <div class="field">
+          <label for="botId">企业微信 BotID</label>
+          <input id="botId" type="text" placeholder="留空稍后在 DSH 设置页面配置" />
+        </div>
+        <div class="field">
+          <label for="secret">企业微信 Secret</label>
+          <input id="secret" type="password" placeholder="留空稍后在 DSH 设置页面配置" />
+        </div>
+      </details>
+    </section>
+
+    <!-- 屏 4：安装 -->
+    <section class="screen" data-screen="3" hidden>
+      <h1>安装</h1>
+      <p class="lead" id="install-lead">点击「开始安装」开始执行；安装过程大约需要 1~5 分钟。</p>
+      <div class="phase-bar" id="phase-bar">
+        <div class="phase" data-phase="0"><span class="dot"></span><span class="name">Node 运行时</span></div>
+        <div class="phase" data-phase="1"><span class="dot"></span><span class="name">DSH 安装</span></div>
+        <div class="phase" data-phase="2"><span class="dot"></span><span class="name">目录</span></div>
+        <div class="phase" data-phase="3"><span class="dot"></span><span class="name">克隆仓库</span></div>
+        <div class="phase" data-phase="4"><span class="dot"></span><span class="name">构建插件</span></div>
+        <div class="phase" data-phase="5"><span class="dot"></span><span class="name">Profile</span></div>
+        <div class="phase" data-phase="6"><span class="dot"></span><span class="name">分身预设</span></div>
+        <div class="phase" data-phase="7"><span class="dot"></span><span class="name">企微/MCP</span></div>
+        <div class="phase" data-phase="8"><span class="dot"></span><span class="name">桌面应用</span></div>
+        <div class="phase" data-phase="9"><span class="dot"></span><span class="name">完成</span></div>
+      </div>
+      <div class="logwrap">
+        <pre id="log" class="log"></pre>
+      </div>
+      <div class="final-actions" id="final-actions" hidden>
+        <label><input type="checkbox" id="launchAfter" /> 安装完成后立即启动数字分身</label>
+      </div>
+      <p class="hint" id="exit-status"></p>
+    </section>
+  </main>
+
+  <footer class="actions">
+    <button id="btn-back" class="ghost" disabled>上一步</button>
+    <div class="spacer"></div>
+    <button id="btn-cancel" class="ghost danger" hidden>取消安装</button>
+    <button id="btn-next" class="primary">下一步</button>
+  </footer>
+
+  <script src="main.js" defer></script>
+</body>
+</html>

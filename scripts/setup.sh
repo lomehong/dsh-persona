@@ -352,7 +352,7 @@ EOF
   ok "启动器已生成: $STARTER（前台运行，Ctrl+C 停止）"
 else
   # ── macOS：安装 DSH Desktop 桌面宿主（从 GitHub Release 下载 dmg，接替旧 dsh-persona.app）──
-  DESKTOP_VERSION="${DESKTOP_VERSION:-0.1.2}"
+  DESKTOP_VERSION="${DESKTOP_VERSION:-0.1.3}"
   DMG_NAME="DSH-Desktop_${DESKTOP_VERSION}_aarch64.dmg"
   DMG_URL_BASE="lomehong/dsh-desktop/releases/download/v${DESKTOP_VERSION}/${DMG_NAME}"
   APP_DEST="$HOME/Applications/DSH-Desktop.app"

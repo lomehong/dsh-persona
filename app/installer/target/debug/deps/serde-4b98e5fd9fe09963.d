@@ -1,0 +1,12 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\serde-4b98e5fd9fe09963.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\integer128.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\mod.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\de.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\ser.rs F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\serde-28b6cfd7c50abbd2\out/private.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libserde-4b98e5fd9fe09963.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\integer128.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\mod.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\de.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\ser.rs F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\serde-28b6cfd7c50abbd2\out/private.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\integer128.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\mod.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\de.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\serde-1.0.229\src\private\ser.rs:
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\serde-28b6cfd7c50abbd2\out/private.rs:
+
+# env-dep:OUT_DIR=F:\\Development\\workspace\\dsh\\dsh-persona\\app\\installer\\target\\debug\\build\\serde-28b6cfd7c50abbd2\\out

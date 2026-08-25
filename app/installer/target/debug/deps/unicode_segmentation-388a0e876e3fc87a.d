@@ -1,0 +1,9 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\unicode_segmentation-388a0e876e3fc87a.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\grapheme.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\sentence.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\word.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\tables.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libunicode_segmentation-388a0e876e3fc87a.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\grapheme.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\sentence.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\word.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\tables.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\grapheme.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\sentence.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\word.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\unicode-segmentation-1.13.3\src\tables.rs:

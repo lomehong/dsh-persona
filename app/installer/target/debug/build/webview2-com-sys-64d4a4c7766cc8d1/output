@@ -1,0 +1,2 @@
+cargo:rustc-link-search=native=F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\build\webview2-com-sys-64d4a4c7766cc8d1\out\x64
+cargo:rustc-link-lib=advapi32

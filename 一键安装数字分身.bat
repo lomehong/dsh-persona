@@ -1,23 +1,32 @@
 @echo off
-title Êı×Ö·ÖÉí - Ò»¼ü°²×°
+rem DSH æ•°å­—åˆ†èº« â€” ä¸€é”®å®‰è£…ï¼ˆGUI ä¼˜å…ˆï¼Œå‘½ä»¤è¡Œå›é€€ï¼‰
+rem
+rem è¡Œä¸ºï¼š
+rem   1. ä¼˜å…ˆæŸ¥æ‰¾ dsh-persona-installer.exeï¼ˆGUI å®‰è£…å‘å¯¼ï¼‰
+rem      - PATH ä¸Šçš„å®‰è£…ç‰ˆï¼ˆé»˜è®¤ %LOCALAPPDATA%\Programs\DSH Persona Installer\ï¼‰
+rem      - ä»“åº“å†…å¼€å‘æ„å»ºï¼ˆ.\app\installer\target\release\ï¼‰
+rem      - ä¸æœ¬æ‰¹å¤„ç†åŒç›®å½•
+rem   2. æ‰¾ä¸åˆ° GUI æ—¶ï¼Œå›é€€åˆ°åŸæ¥çš„ powershell scripts\setup.ps1 æµç¨‹
 
-echo ================================================
-echo   Êı×Ö·ÖÉí Ò»¼ü°²×°³ÌĞò
-echo   ÍêÕû°²×° + ×Ô¶¯´´½¨×ÀÃæ¿ì½İ·½Ê½ + ×°Íê¼´Æô¶¯
-echo ================================================
-echo.
-echo °²×°¹ı³ÌÔ¼Ğè 3~10 ·ÖÖÓ£¨Ê×´ÎĞèÏÂÔØÔËĞĞÊ±Óë¹¹½¨²å¼ş£©£¬
-echo ¹ı³ÌÖĞ»áÖğ²½Ñ¯ÎÊ·ÖÉíĞÅÏ¢£¬Ã¿ÏîÖ±½Ó»Ø³µ¼´ÓÃÄ¬ÈÏÖµ¡£
-echo.
+setlocal
+set "SCRIPT_DIR=%~dp0"
 
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\setup.ps1" %*
-if %errorlevel% neq 0 (
-  echo.
-  echo °²×°¹ı³ÌÖĞ³öÏÖ´íÎó£¬Çë²é¿´ÉÏ·½ÈÕÖ¾ºóÖØÊÔ¡£
-  pause
-  exit /b 1
+rem â”€â”€ å€™é€‰ GUI äºŒè¿›åˆ¶è·¯å¾„ï¼ˆæŒ‰ä¼˜å…ˆçº§ï¼‰â”€â”€
+set "GUI_EXE="
+for %%P in ("%LOCALAPPDATA%\Programs\DSH Persona Installer\dsh-persona-installer.exe") do set "CAND=%%~fP"
+if exist "%CAND%" set "GUI_EXE=%CAND%"
+
+if not defined GUI_EXE if exist "%SCRIPT_DIR%app\installer\target\release\dsh-persona-installer.exe" set "GUI_EXE=%SCRIPT_DIR%app\installer\target\release\dsh-persona-installer.exe"
+
+if not defined GUI_EXE if exist "%SCRIPT_DIR%dsh-persona-installer.exe" set "GUI_EXE=%SCRIPT_DIR%dsh-persona-installer.exe"
+
+if defined GUI_EXE (
+  echo å¯åŠ¨ DSH æ•°å­—åˆ†èº« GUI å®‰è£…å‘å¯¼: "%GUI_EXE%"
+  start "" "%GUI_EXE%"
+  exit /b 0
 )
 
-echo.
-echo °²×°Á÷³Ì½áÊø£¬¸ĞĞ»Ê¹ÓÃ¡£
-pause
+rem â”€â”€ å›é€€ï¼šåŸå‘½ä»¤è¡Œå®‰è£… â”€â”€
+echo æœªæ‰¾åˆ° dsh-persona-installer.exeï¼Œå›é€€åˆ°å‘½ä»¤è¡Œå®‰è£…...
+powershell -ExecutionPolicy Bypass -File "%SCRIPT_DIR%scripts\setup.ps1" %*
+endlocal

@@ -1,0 +1,11 @@
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\foldhash-a4295ec2f1ecd3ac.d: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\fast.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\quality.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\seed.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\convenience.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libfoldhash-a4295ec2f1ecd3ac.rlib: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\fast.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\quality.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\seed.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\convenience.rs
+
+F:\Development\workspace\dsh\dsh-persona\app\installer\target\debug\deps\libfoldhash-a4295ec2f1ecd3ac.rmeta: C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\lib.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\fast.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\quality.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\seed.rs C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\convenience.rs
+
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\lib.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\fast.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\quality.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\seed.rs:
+C:\Users\test\.cargo\registry\src\mirrors.ustc.edu.cn-38d0e5eb5da2abae\foldhash-0.2.0\src\convenience.rs:
