@@ -36,6 +36,29 @@ curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install-m
 - 内网托管：`export DSP_TARBALL_URL='http://<服务器>/dsh-persona.tar.gz'`（包用
   `git archive --format=tar.gz --prefix=dsh-persona-main/ -o dsh-persona.tar.gz HEAD` 生成）
 
+## 便携版（U盘版）
+
+把整个数字分身拷进U盘，插到任何 Windows 电脑双击即用：免安装、免管理员权限、
+不在宿主机留下任何痕迹。分身的全部状态（人设、会话、共享记忆、企业微信绑定、
+模型切换配置）都在U盘里，换电脑还是同一个分身。
+
+- 下载：GitHub Release `portable-v*` 的 `DSH-Persona-Portable_*.zip`（约 120MB），
+  解压到U盘（建议 USB 3.0+），双击 `DSH-Desktop.exe`
+- 首次运行：应用内「分身信息配置」向导（8 项信息 + 可选企业微信凭证），保存即启动；
+  之后可从托盘菜单「重新运行分身向导」修改
+- 制作：任意有网的 Windows 机器上 `.\scripts\make-portable.ps1`（`-DshVersion` /
+  `-DesktopVersion` / `-NodeVersion` 可调；CI 见 `.github/workflows/portable.yml`，
+  tag `portable-v*` 自动出包）
+- 升级：托盘「升级 DSH 运行时」就地升级包内 DSH；完整升级重跑 make-portable 后把
+  旧包的 `Data\home` 覆盖到新包即可保留全部状态
+- 依赖 DSH Desktop ≥ v0.1.4 的便携模式（`Data` 目录标记 + `DSH_HOME` 重定向 +
+  分身向导）；宿主机需有 WebView2 运行时（Win11 / 已更新的 Win10 自带）
+- 原理：exe 旁存在 `Data\node` 即便携模式，全部路径相对 exe 现场解析（换盘符有效）；
+  插件以 vendored tgz 装配（零 junction / 零绝对路径链接），peer 依赖钉死运行时版本
+- 安全须知：企业微信凭证与全部会话记录**明文随U盘携带**——U盘丢失等于分身身份丢失，
+  建议使用带硬件加密的U盘
+- 限制：同一台电脑上便携版与安装版不能同时运行；应用自更新在便携模式下已禁用
+
 ### 方式三：clone 后一键安装
 
 无需预装 Node.js / DSH——脚本会自动下载**便携版 Node.js 24** 到 `%LOCALAPPDATA%\dsh-persona`，
