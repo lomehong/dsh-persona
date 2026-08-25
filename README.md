@@ -138,6 +138,7 @@ cd dsh-persona
 - [dsh-memory](https://github.com/lomehong/dsh-memory) — 共享记忆插件
 - [dsh-im-bot](https://github.com/lomehong/dsh-im-bot) — 企业微信通道、MCP 工具注册
 - [dsh-yuyi](https://github.com/lomehong/dsh-yuyi) — 御驿通信插件（Hub 接缝、会话 roster、yuyi_* 工具集、御驿 Web 标签页）
+- [dsh-model-failover](https://github.com/lomehong/dsh-model-failover) — 模型自动降级插件（套餐超限/余额不足时按成本优先级链自动切换模型，窗口重置后自动切回；在 设置 → 模型切换 配置降级链，未配置时不生效）
 
 dsh-yuyi 的御驿工具会自动挂载进 digital-twin 预设，分身会话即可经 Hub 通信；其
 `node_modules\@deepseek-ai` 由 setup.ps1 统一为指向 DSH 运行时依赖的 junction，

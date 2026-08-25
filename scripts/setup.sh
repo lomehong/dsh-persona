@@ -132,20 +132,24 @@ export PATH="$NODE_DIR/bin:$PATH"
 
 # ── 安装 DSH ──
 step "安装 DSH（便携版环境）"
-if [[ ! -f "$NODE_DIR/bin/dsh" ]]; then
-  info "安装 DSH…"
-  # 固定版本号安装（可复现）；0.1.1-rc.2 已含 dsh-memory 所需的 defineTool，
-  # 且与 DSH Desktop 的基线版本一致
+install_dsh() {
   DSH_PKG_VERSION="${DSH_VERSION:-0.1.1-rc.2}"
   npm install -g "@deepseek-ai/dsh@${DSH_PKG_VERSION}" --no-progress --prefix "$NODE_DIR" >/dev/null
   [[ -f "$NODE_DIR/bin/dsh" ]] || { warn "DSH 安装失败"; exit 1; }
   ok "DSH 已安装到便携版环境"
-else
+}
+if [[ -f "$NODE_DIR/bin/dsh" && -z "${DSP_FORCE_REINSTALL_DSH:-}" ]]; then
   ok "DSH 已就绪（便携版）"
+elif [[ "${DSP_FORCE_REINSTALL_DSH:-}" == "1" ]]; then
+  info "DSP_FORCE_REINSTALL_DSH=1：强制重装 DSH Core 到 ${DSH_VERSION:-0.1.1-rc.2}"
+  rm -rf "$NODE_DIR/lib/node_modules/@deepseek-ai/dsh" 2>/dev/null || true
+  rm -f  "$NODE_DIR/bin/dsh" 2>/dev/null || true
+  info "已删除旧 DSH"
+  install_dsh
+else
+  info "安装 DSH…"
+  install_dsh
 fi
-
-# ── 安装目录与克隆 ──
-step "确定安装目录"
 [[ -n "$PACKAGES_DIR" ]] || PACKAGES_DIR="$HOME/dsh-persona"
 if ! $NON_INTERACTIVE; then
   v=""
@@ -199,6 +203,7 @@ fetch_repo() { # $1=name
 fetch_repo dsh-memory
 fetch_repo dsh-im-bot
 fetch_repo dsh-yuyi
+fetch_repo dsh-model-failover
 
 # ── 复制 dsh-persona-guide 与文档 ──
 step "复制分身指引插件"
@@ -243,6 +248,7 @@ build_plugin "$PACKAGES_DIR/dsh-memory" "dsh-memory" 1
 build_plugin "$PACKAGES_DIR/dsh-im-bot/im-channel" "im-channel" 1
 build_plugin "$PACKAGES_DIR/dsh-im-bot/ui-settings-im" "ui-settings-im" 1
 build_plugin "$PACKAGES_DIR/dsh-yuyi" "dsh-yuyi" 1
+build_plugin "$PACKAGES_DIR/dsh-model-failover" "dsh-model-failover" 1
 build_plugin "$GUIDE_DEST" "dsh-persona-guide" 1
 
 # ── 配置 Profile ──
@@ -257,7 +263,8 @@ cat > "$PROFILE_DIR/package.json" <<EOF
     "@dsh-extra/dsh-client-ui-settings-im": "file:$PACKAGES_DIR/dsh-im-bot/ui-settings-im",
     "@dsh-extra/dsh-memory": "file:$PACKAGES_DIR/dsh-memory",
     "@dsh-extra/dsh-persona-guide": "file:$PACKAGES_DIR/dsh-persona-guide",
-    "dsh-yuyi": "file:$PACKAGES_DIR/dsh-yuyi"
+    "dsh-yuyi": "file:$PACKAGES_DIR/dsh-yuyi",
+    "@dsh-extra/dsh-model-failover": "file:$PACKAGES_DIR/dsh-model-failover"
   },
   "dsh": {
     "profile": {
@@ -268,7 +275,8 @@ cat > "$PROFILE_DIR/package.json" <<EOF
         "@dsh-extra/dsh-client-ui-settings-im",
         "@dsh-extra/dsh-memory",
         "@dsh-extra/dsh-persona-guide",
-        "dsh-yuyi"
+        "dsh-yuyi",
+        "@dsh-extra/dsh-model-failover"
       ]
     }
   }
@@ -322,6 +330,11 @@ fi
 
 # ── 安装 profile 依赖 ──
 step "安装依赖"
+# profile 曾用 pnpm 管理过（开发机）：其符号链接布局会让 npm Arborist 崩溃，检测到即清掉重建
+if [[ -f "$PROFILE_DIR/pnpm-lock.yaml" || -f "$PROFILE_DIR/pnpm-workspace.yaml" ]]; then
+  info "检测到 pnpm 残留布局，清理后改用 npm 重建"
+  rm -rf "$PROFILE_DIR/node_modules" "$PROFILE_DIR/pnpm-lock.yaml" "$PROFILE_DIR/pnpm-workspace.yaml"
+fi
 (cd "$PROFILE_DIR" && npm install --legacy-peer-deps --no-progress >/dev/null) || { warn "profile 依赖安装失败"; exit 1; }
 ok "依赖安装完成"
 
@@ -403,6 +416,7 @@ else
   fi
 fi
 echo "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner"
+echo "  模型降级：进入 设置 → 模型切换 配置降级链（套餐超限/余额不足自动切换，未配置时不生效）"
 echo
 echo "运行时环境: $NODE_DIR"
 echo "插件目录: $PACKAGES_DIR"

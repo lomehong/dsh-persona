@@ -172,11 +172,26 @@ $env:Path = "$NodeDir;$env:Path"
 
 # ── 安装 DSH（装进便携版环境，不动系统全局） ──
 $dshCmd = Join-Path $NodeDir "dsh.cmd"
-if (-not (Test-Path $dshCmd)) {
-    Write-Info "安装 DSH 到便携版环境..."
+$forceReinstall = ($env:DSP_FORCE_REINSTALL_DSH -eq "1")
+$installedVersion = ""
+if ((Test-Path $dshCmd) -and -not $forceReinstall) {
+    Write-OK "DSH 已就绪（便携版）"
+} else {
+    if ($forceReinstall) {
+        Write-Info "DSP_FORCE_REINSTALL_DSH=1：强制重装 DSH Core 到 $DshVersion"
+        # 删除旧 DSH 与对应依赖作用域，让 npm 真正装新版
+        $oldDsh = Join-Path $NodeDir "node_modules\@deepseek-ai\dsh"
+        if (Test-Path $oldDsh) {
+            Remove-Item $oldDsh -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Info "已删除旧 DSH: $oldDsh"
+        }
+        if (Test-Path $dshCmd) {
+            Remove-Item $dshCmd -Force -ErrorAction SilentlyContinue
+        }
+    } else {
+        Write-Info "安装 DSH 到便携版环境..."
+    }
     $ErrorActionPreference = "Continue"
-    # 固定版本号安装（可复现）；0.1.1-rc.2 已含 dsh-memory 所需的 defineTool，
-    # 且与 DSH Desktop 的基线版本一致
     $out = npm install -g "@deepseek-ai/dsh@$DshVersion" --no-progress 2>&1 | ForEach-Object { "$_" }
     $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) {
@@ -185,10 +200,7 @@ if (-not (Test-Path $dshCmd)) {
         exit 1
     }
     Write-OK "DSH 已安装到便携版环境"
-} else {
-    Write-OK "DSH 已就绪（便携版）"
 }
-
 # DSH 包自带的 @deepseek-ai 依赖作用域，运行时通过 junction 提供给需要的插件
 $DshAIScope = Join-Path $NodeDir "node_modules\@deepseek-ai\dsh\node_modules\@deepseek-ai"
 
@@ -276,7 +288,8 @@ Write-Step "克隆仓库"
 $repos = @(
     @{ name = "dsh-memory"; url = "https://github.com/lomehong/dsh-memory.git" },
     @{ name = "dsh-im-bot"; url = "https://github.com/lomehong/dsh-im-bot.git" },
-    @{ name = "dsh-yuyi"; url = "https://github.com/lomehong/dsh-yuyi.git" }
+    @{ name = "dsh-yuyi"; url = "https://github.com/lomehong/dsh-yuyi.git" },
+    @{ name = "dsh-model-failover"; url = "https://github.com/lomehong/dsh-model-failover.git" }
 )
 
 $packages = @()
@@ -453,6 +466,7 @@ Build-Plugin (Join-Path $PackagesDir "dsh-memory") "dsh-memory" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\im-channel") "im-channel" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-im-bot\ui-settings-im") "ui-settings-im" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-yuyi") "dsh-yuyi" -LinkDshDeps
+Build-Plugin (Join-Path $PackagesDir "dsh-model-failover") "dsh-model-failover" -LinkDshDeps
 Build-Plugin (Join-Path $PackagesDir "dsh-persona-guide") "dsh-persona-guide" -LinkDshDeps
 
 # ── 配置 DSH Profile ──
@@ -471,6 +485,7 @@ $packageJson = @{
         "@dsh-extra/dsh-memory" = "file:$(Join-Path $PackagesDir 'dsh-memory')"
         "@dsh-extra/dsh-persona-guide" = "file:$(Join-Path $PackagesDir 'dsh-persona-guide')"
         "dsh-yuyi" = "file:$(Join-Path $PackagesDir 'dsh-yuyi')"
+        "@dsh-extra/dsh-model-failover" = "file:$(Join-Path $PackagesDir 'dsh-model-failover')"
     }
     dsh = @{
         profile = @{
@@ -481,7 +496,8 @@ $packageJson = @{
                 "@dsh-extra/dsh-client-ui-settings-im",
                 "@dsh-extra/dsh-memory",
                 "@dsh-extra/dsh-persona-guide",
-                "dsh-yuyi"
+                "dsh-yuyi",
+                "@dsh-extra/dsh-model-failover"
             )
         }
     }
@@ -616,6 +632,15 @@ if (-not $NonInteractive) {
 
 # ── 安装依赖到 profile ──
 Write-Step "安装依赖"
+# profile 曾用 pnpm 管理过（开发机）：其符号链接布局会让 npm Arborist 崩溃
+# （Cannot read properties of null (reading 'package')），检测到即清掉重建
+$pnpmLock = Join-Path $profileDir "pnpm-lock.yaml"
+if ((Test-Path $pnpmLock) -or (Test-Path (Join-Path $profileDir "pnpm-workspace.yaml"))) {
+    Write-Info "检测到 pnpm 残留布局，清理后改用 npm 重建"
+    Remove-Item (Join-Path $profileDir "node_modules") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item $pnpmLock -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $profileDir "pnpm-workspace.yaml") -Force -ErrorAction SilentlyContinue
+}
 Push-Location $profileDir
 $ErrorActionPreference = "Continue"
 $out = npm install --legacy-peer-deps --no-progress 2>&1 | ForEach-Object { "$_" }
@@ -641,6 +666,7 @@ if ($desktopOk) {
 }
 Write-Host "  关闭窗口=最小化到托盘，企业微信/御驿不中断；托盘右键菜单可退出/开机自启" -ForegroundColor Gray
 Write-Host "  首次使用：进入 设置 → 手机连接 配置企业微信，并在企业微信发送 /bind 绑定为 Owner" -ForegroundColor Gray
+Write-Host "  模型降级：进入 设置 → 模型切换 配置降级链（套餐超限/余额不足自动切换，未配置时不生效）" -ForegroundColor Gray
 Write-Host ""
 Write-Host "运行时环境（与系统 Node 隔离）: $NodeDir" -ForegroundColor Gray
 Write-Host "插件目录: $PackagesDir" -ForegroundColor Gray
