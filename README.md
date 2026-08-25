@@ -41,7 +41,7 @@ curl -fsSL https://raw.githubusercontent.com/lomehong/dsh-persona/main/install-m
 无需预装 Node.js / DSH——脚本会自动下载**便携版 Node.js 24** 到 `%LOCALAPPDATA%\dsh-persona`，
 所有构建与运行都基于该便携环境，与系统 Node（及 nvm）完全隔离，不需要管理员权限。
 
-> DSH 0.1.0-rc.x 要求 Node.js >= 23.8（`node:zlib` 的 zstd API），因此便携版固定为 Node 24 LTS。
+> DSH 0.1.x 要求 Node.js >= 23.8（`node:zlib` 的 zstd API），因此便携版固定为 Node 24 LTS；DSH 固定安装 `@deepseek-ai/dsh@0.1.1-rc.2`（`-DshVersion` 参数 / `DSH_VERSION` 环境变量可覆盖）。
 
 ```powershell
 git clone https://github.com/lomehong/dsh-persona.git

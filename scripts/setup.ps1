@@ -20,6 +20,7 @@ param(
     [string]$TwinName = "",
     [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
+    [string]$DshVersion = "0.1.1-rc.2",
     [string]$DesktopVersion = "0.1.2",
     [switch]$NonInteractive = $false,
     [switch]$Launch = $false
@@ -123,7 +124,7 @@ function Build-Plugin($workDir, $name, [switch]$LinkDshDeps) {
 # ── 便携版 Node.js（与系统 Node 完全隔离） ──
 # 参考 dsh-launcher 的做法：便携版解压到 %LOCALAPPDATA%，后续所有命令都基于它运行。
 # 不需要管理员权限、不修改系统 PATH，也不受系统 Node 版本 / nvm 状态影响。
-# 注意：DSH 0.1.0-rc.x 需要 Node >= 23.8（node:zlib 的 zstd API），默认用 Node 24 LTS。
+# 注意：DSH 0.1.x 要求 Node >= 23.8（node:zlib 的 zstd API），默认用 Node 24 LTS。
 Write-Step "准备 Node.js 运行环境"
 
 $NodeRoot = Join-Path $env:LOCALAPPDATA "dsh-persona"
@@ -174,8 +175,9 @@ $dshCmd = Join-Path $NodeDir "dsh.cmd"
 if (-not (Test-Path $dshCmd)) {
     Write-Info "安装 DSH 到便携版环境..."
     $ErrorActionPreference = "Continue"
-    # 锁定 rc.8：latest 标签当前指向 rc.7，缺少 dsh-memory 记忆工具所需的 defineTool 能力
-    $out = npm install -g @deepseek-ai/dsh@0.1.0-rc.8 --no-progress 2>&1 | ForEach-Object { "$_" }
+    # 固定版本号安装（可复现）；0.1.1-rc.2 已含 dsh-memory 所需的 defineTool，
+    # 且与 DSH Desktop 的基线版本一致
+    $out = npm install -g "@deepseek-ai/dsh@$DshVersion" --no-progress 2>&1 | ForEach-Object { "$_" }
     $ErrorActionPreference = "Stop"
     if ($LASTEXITCODE -ne 0) {
         Write-Host ($out -join "`n") -ForegroundColor Red
