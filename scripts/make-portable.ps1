@@ -15,7 +15,7 @@ param(
     [string]$OutDir = "",
     [string]$WorkDir = "",
     [string]$DshVersion = "0.1.1-rc.2",
-    [string]$DesktopVersion = "0.1.5",
+    [string]$DesktopVersion = "0.1.9",
     [string]$NodeVersion = "24.19.0",
     [switch]$SkipBuild = $false
 )
@@ -24,7 +24,7 @@ $ErrorActionPreference = "Stop"
 
 # 空串参数回退默认值（CI 传参时空环境变量会以空串覆盖 param 默认值）
 if (-not $DshVersion) { $DshVersion = "0.1.1-rc.2" }
-if (-not $DesktopVersion) { $DesktopVersion = "0.1.5" }
+if (-not $DesktopVersion) { $DesktopVersion = "0.1.9" }
 if (-not $NodeVersion) { $NodeVersion = "24.19.0" }
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -78,12 +78,15 @@ foreach ($repo in $repos) {
 }
 $ErrorActionPreference = "Stop"
 
-# dsh-persona-guide：仓库内自带
+# dsh-persona-guide：仓库内自带。完整构建时刷新拷贝；-SkipBuild 且已有构建产物时不重拷
+# （重拷会清掉 lib/，跳过构建的 pack 就不含 lib——曾致 dsh 装载失败）
 $guideBuild = Join-Path $WorkDir "dsh-persona-guide"
-Remove-Item $guideBuild -Recurse -Force -ErrorAction SilentlyContinue
-Copy-Item (Join-Path $PersonaRoot "packages\dsh-persona-guide") $guideBuild -Recurse -Force
-Remove-Item (Join-Path $guideBuild "node_modules") -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item (Join-Path $guideBuild "lib") -Recurse -Force -ErrorAction SilentlyContinue
+if (-not ($SkipBuild -and (Test-Path (Join-Path $guideBuild "lib\index.js")))) {
+    Remove-Item $guideBuild -Recurse -Force -ErrorAction SilentlyContinue
+    Copy-Item (Join-Path $PersonaRoot "packages\dsh-persona-guide") $guideBuild -Recurse -Force
+    Remove-Item (Join-Path $guideBuild "node_modules") -Recurse -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $guideBuild "lib") -Recurse -Force -ErrorAction SilentlyContinue
+}
 Write-OK "插件源码就绪"
 
 # ── 2. 构建插件并 npm pack ──
@@ -296,6 +299,18 @@ foreach ($plugin in $pluginDirs) {
     if (-not (Test-Path $dstPatch)) {
         Copy-Item $srcPatch $dstPatch -Force
         Write-Warn "$srcPjName 的 files 字段漏列 cordis.patch.yml，已补拷到安装副本"
+    }
+}
+# 硬校验：每个插件源目录有 lib\index.js 的，安装副本必须有——缺了说明 pack 时
+# 构建产物不在（如 -SkipBuild 前被重拷清掉），这种包必然装载失败，立即中止
+foreach ($plugin in $pluginDirs) {
+    $srcLib = Join-Path $plugin.dir "lib\index.js"
+    if (-not (Test-Path $srcLib)) { continue }
+    $pjName = ([IO.File]::ReadAllText((Join-Path $plugin.dir "package.json")) | ConvertFrom-Json).name
+    $dstLib = Join-Path $profileDir "node_modules\$($pjName -replace "/", "\")\lib\index.js"
+    if (-not (Test-Path $dstLib)) {
+        Write-Warn "$pjName 的安装副本缺 lib\index.js（pack 时无构建产物）——中止，请去掉 -SkipBuild 完整构建"
+        exit 1
     }
 }
 Write-OK "profile 装配完成（无链接，全部真实目录）"

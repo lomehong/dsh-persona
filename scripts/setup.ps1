@@ -21,7 +21,7 @@ param(
     [string]$TwinAliases = "",
     [string]$NodeVersion = "24.19.0",
     [string]$DshVersion = "0.1.1-rc.2",
-    [string]$DesktopVersion = "0.1.3",
+    [string]$DesktopVersion = "0.1.9",
     [switch]$NonInteractive = $false,
     [switch]$Launch = $false
 )
