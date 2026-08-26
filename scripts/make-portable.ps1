@@ -15,7 +15,8 @@ param(
     [string]$OutDir = "",
     [string]$WorkDir = "",
     [string]$DshVersion = "0.1.1-rc.2",
-    [string]$DesktopVersion = "0.1.9",
+    [string]$DesktopVersion = "0.1.12",
+    [string]$PortableVersion = "0.1.12",
     [string]$NodeVersion = "24.19.0",
     [switch]$SkipBuild = $false
 )
@@ -24,7 +25,8 @@ $ErrorActionPreference = "Stop"
 
 # 空串参数回退默认值（CI 传参时空环境变量会以空串覆盖 param 默认值）
 if (-not $DshVersion) { $DshVersion = "0.1.1-rc.2" }
-if (-not $DesktopVersion) { $DesktopVersion = "0.1.9" }
+if (-not $DesktopVersion) { $DesktopVersion = "0.1.12" }
+if (-not $PortableVersion) { $PortableVersion = "0.1.12" }
 if (-not $NodeVersion) { $NodeVersion = "24.19.0" }
 
 $ScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -400,7 +402,7 @@ Write-OK "启动入口与说明文件已写入"
 
 # ── 7. 打 zip ──
 Write-Step "压缩便携包"
-$zipOut = Join-Path $OutDir "DSH-Persona-Portable_v${DesktopVersion}_win-x64.zip"
+$zipOut = Join-Path $OutDir "DSH-Persona-Portable_v${PortableVersion}_win-x64.zip"
 Remove-Item $zipOut -Force -ErrorAction SilentlyContinue
 # 用 Windows 自带 bsdtar（tar -a 按扩展名自动 zip）：PS 5.1 的 Compress-Archive
 # 处理不了 node_modules 里的超长路径（mistralai 的深度嵌套 .d.ts 超 260 字符）。
